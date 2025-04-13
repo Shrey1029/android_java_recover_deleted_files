@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">FileMiner</string>
+    <string-array name="search_options">
+        <item>Contains</item>
+        <item>Starts with</item>
+        <item>Ends with</item>
+        <item>Exact match</item>
+    </string-array>
 </resources>

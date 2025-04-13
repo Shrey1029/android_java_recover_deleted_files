@@ -30,10 +30,12 @@ public class AllDataRecovery extends Activity {
     private static final int REQUEST_STORAGE_PERMISSION = 100;
     private static final int MAX_FILES = 500;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_all_data_recovery);
+
 
         deletedFilesGridView = findViewById(R.id.deletedFilesGridView);
         progressBar = findViewById(R.id.progressBar); // Initialize ProgressBar
@@ -145,7 +147,7 @@ public class AllDataRecovery extends Activity {
         try {
             Uri uri = Uri.fromFile(file);
             Intent intent = new Intent(Intent.ACTION_VIEW);
-            String type = "*/*";
+            String type = "/";
 
             if (file.getName().endsWith(".jpg") || file.getName().endsWith(".jpeg") || file.getName().endsWith(".png")) {
                 type = "image/*";

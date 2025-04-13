@@ -6,24 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".AllDataRecovery"
-   >
-
-
-<!--    <TextView-->
-<!--        android:layout_width="wrap_content"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:text="Deleted Files"-->
-<!--        android:textSize="18sp"-->
-<!--        android:textStyle="bold"-->
-<!--        android:padding="8dp" />-->
-
-<!--    <GridView-->
-<!--        android:id="@+id/deletedFilesGridView"-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:numColumns="3"-->
-<!--        android:horizontalSpacing="5dp"-->
-<!--        android:verticalSpacing="5dp" />-->
+    >
     <ProgressBar
         android:id="@+id/progressBar"
         android:layout_width="wrap_content"
@@ -38,4 +21,7 @@
         android:layout_height="match_parent"
         android:numColumns="3"
         android:visibility="gone" />
+
+
+
 </RelativeLayout>

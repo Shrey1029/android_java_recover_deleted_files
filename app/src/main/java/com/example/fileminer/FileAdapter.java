@@ -44,49 +44,6 @@ public class FileAdapter extends BaseAdapter {
         }
     }
 
-    public void refreshFiles(List<File> newFiles) {
-        if (isFilesLoaded) return; // Avoid reloading if files are already loaded
-
-        List<File> filteredFiles = filterDeletedFiles(newFiles);
-
-        boolean changesDetected = false;
-
-        if (filteredFiles.size() != files.size()) {
-            changesDetected = true;
-        } else {
-            for (File file : filteredFiles) {
-                Long lastModified = fileTimestamps.get(file.getAbsolutePath());
-                if (lastModified == null || lastModified != file.lastModified()) {
-                    changesDetected = true;
-                    break;
-                }
-            }
-        }
-
-        if (changesDetected) {
-            this.files = filteredFiles;
-            cacheFileTimestamps();
-            notifyDataSetChanged();
-            isFilesLoaded = true;
-        }
-    }
-
-    public void scanForDeletedFiles(String path) {
-        File directory = new File(path);
-        if (directory.exists() && directory.isDirectory()) {
-            File[] files = directory.listFiles();
-            if (files != null) {
-                List<File> recoverableFiles = new ArrayList<>();
-                for (File file : files) {
-                    if (file.exists()) {
-                        recoverableFiles.add(file);
-                    }
-                }
-                refreshFiles(recoverableFiles);
-            }
-        }
-    }
-
     @Override
     public int getCount() {
         return files.size();
@@ -161,7 +118,7 @@ public class FileAdapter extends BaseAdapter {
         if (fileName.endsWith(".pdf")) return "application/pdf";
         if (fileName.endsWith(".doc") ||  fileName.endsWith(".docx")) return "application/msword";
         if (fileName.endsWith(".mp3") || fileName.endsWith(".wav")) return "audio/*";
-        return "*/*";
+        return "/";
 
     }
 }

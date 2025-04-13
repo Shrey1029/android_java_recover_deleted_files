@@ -7,11 +7,48 @@
     android:layout_height="match_parent"
     tools:context=".RestoredFilesActivity">
 
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_centerInParent="true"
+        android:visibility="gone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        />
 
-    <ListView
-        android:id="@+id/listView"
+    <!-- Bulk Delete Button -->
+    <Button
+        android:id="@+id/btnDeleteSelected"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Delete Selected Files"
+        android:visibility="gone" />
+    <TextView
+        android:id="@+id/noResultsText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="No files found with this name!"
+        android:textSize="16sp"
+        android:gravity="center"
+        android:visibility="gone"
+        android:padding="16dp" />
+
+
+
+    <!-- GridView for displaying files -->
+    <GridView
+        android:id="@+id/gridView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:divider="@android:color/darker_gray"
-        android:dividerHeight="1dp" />
+        android:numColumns="3"
+        android:verticalSpacing="8dp"
+        android:horizontalSpacing="8dp"
+        android:stretchMode="columnWidth"
+        android:gravity="center"
+        />
+    <!-- activity_restored_files.xml -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
 </RelativeLayout>
