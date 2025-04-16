@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">  <!-- Add this line -->
+    <item
+        android:id="@+id/sortByName"
+        android:title="Sort by Name"
+        android:icon="@drawable/ic_sort_by_name"
+        android:showAsAction="ifRoom"/>
+
+    <item
+        android:id="@+id/sortBySize"
+        android:title="Sort by Size"
+        android:icon="@drawable/ic_sort_by_size"
+        android:showAsAction="ifRoom"/>
+
+    <item
+        android:id="@+id/sortByTime"
+        android:title="Sort by Time"
+        android:icon="@drawable/ic_sort_by_time"
+        android:showAsAction="ifRoom"/>
+
+    <item
+        android:id="@+id/sortOrderToggle"
+        android:title="Ascending"
+        android:showAsAction="never"/>
+
+    <!-- Bulk Delete Option -->
+    <item
+        android:id="@+id/deleteSelected"
+        android:title="Delete Selected Files"
+        android:icon="@android:drawable/ic_menu_delete"
+        android:showAsAction="ifRoom"/>
+    <item
+        android:id="@+id/action_search"
+        android:title="Search"
+        android:icon="@android:drawable/ic_menu_search"
+        app:showAsAction="ifRoom|collapseActionView"
+        app:actionViewClass="androidx.appcompat.widget.SearchView" />
+
+
+</menu>

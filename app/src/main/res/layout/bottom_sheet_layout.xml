@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="?android:attr/windowBackground"
+    android:gravity="center_horizontal">
+
+    <!-- Search Type Options -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Search Type"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp"
+        android:gravity="start"/>
+
+    <RadioGroup
+        android:id="@+id/radioGroup"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginBottom="16dp">
+
+        <RadioButton
+            android:id="@+id/radioContains"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Contains"
+            android:paddingEnd="16dp"
+            android:paddingStart="16dp" />
+
+        <RadioButton
+            android:id="@+id/radioStartsWith"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Starts With"
+            android:paddingEnd="16dp"
+            android:paddingStart="16dp" />
+
+        <RadioButton
+            android:id="@+id/radioEndsWith"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Ends With"
+            android:paddingEnd="16dp"
+            android:paddingStart="16dp" />
+
+    </RadioGroup>
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginVertical="12dp"
+        android:background="#CCCCCC" />
+
+    <!-- Case Sensitivity Options -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Case Sensitivity"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp"
+        android:gravity="start"/>
+
+    <RadioGroup
+        android:id="@+id/radioGroupCase"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="16dp">
+
+        <RadioButton
+            android:id="@+id/radioCaseSensitive"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Case Sensitive"
+            android:paddingEnd="16dp"
+            android:paddingStart="16dp" />
+
+        <RadioButton
+            android:id="@+id/radioCaseInsensitive"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Case Insensitive"
+            android:paddingEnd="16dp"
+            android:paddingStart="16dp" />
+    </RadioGroup>
+
+</LinearLayout>

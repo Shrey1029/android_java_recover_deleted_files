@@ -1,33 +1,76 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="wrap_content"
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
     android:padding="8dp"
-    android:gravity="center_horizontal">
+    android:layout_margin="8dp"
+   >
 
+    <!-- File Thumbnail -->
     <ImageView
         android:id="@+id/fileThumbnail"
-        android:layout_width="64dp"
-        android:layout_height="64dp"
-        android:scaleType="centerCrop" />
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_file"
+        android:alpha="0.9"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true" />
 
+    <!-- Checkbox (Top-Right Corner of Thumbnail) -->
+    <CheckBox
+        android:id="@+id/selectCheckbox"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_alignTop="@id/fileThumbnail"
+        android:layout_alignEnd="@id/fileThumbnail"
+        android:layout_margin="6dp"
+        android:buttonTint="@color/white"
+        android:background="@drawable/checkbox_bg" />
+
+    <!-- Share Button (Bottom-Left Corner of Thumbnail) -->
+    <ImageView
+        android:id="@+id/shareButton"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_alignBottom="@id/fileThumbnail"
+        android:layout_alignStart="@id/fileThumbnail"
+        android:layout_margin="6dp"
+        android:src="@drawable/ic_share"
+        android:tint="@color/red"
+        android:background="@drawable/button_bg"
+        android:contentDescription="Share"
+        android:padding="4dp"
+        android:clickable="true"
+        android:focusable="true" />
+
+    <!-- Delete Button (Bottom-Right Corner of Thumbnail) -->
+    <ImageView
+        android:id="@+id/deleteButton"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_alignBottom="@id/fileThumbnail"
+        android:layout_alignEnd="@id/fileThumbnail"
+        android:layout_margin="6dp"
+        android:src="@android:drawable/ic_menu_delete"
+        android:tint="@color/teal_200"
+        android:background="@drawable/button_bg"
+        android:contentDescription="Delete"
+        android:clickable="true"
+        android:focusable="true" />
+
+    <!-- File Name TextView -->
     <TextView
         android:id="@+id/fileName"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_below="@id/fileThumbnail"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text="File Name"
         android:textSize="14sp"
-        android:textStyle="bold"
-        android:textColor="@android:color/black"
-        android:paddingTop="4dp" />
+        android:textColor="@color/white"
+        android:maxLines="2"
+        android:ellipsize="end" />
 
-<!--    <TextView-->
-<!--        android:id="@+id/filePath"-->
-<!--        android:layout_width="wrap_content"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:textSize="12sp"-->
-<!--        android:textColor="@android:color/darker_gray"-->
-<!--        android:maxLines="2"-->
-<!--        android:ellipsize="middle"-->
-<!--        android:paddingTop="2dp" />-->
-
-</LinearLayout>
+</RelativeLayout>

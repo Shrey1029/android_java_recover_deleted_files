@@ -15,6 +15,7 @@ import android.text.style.ForegroundColorSpan;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
+
 import androidx.annotation.Nullable;
 
 public class PermissionActivity extends Activity {
@@ -24,6 +25,14 @@ public class PermissionActivity extends Activity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Agar permission already mil chuki hai, toh sidha MainActivity2 open karo
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && Environment.isExternalStorageManager()) {
+            openMainActivity();
+            return;
+        }
+
+        // Layout set karo agar permission nahi mili hai
         setContentView(R.layout.activity_permission);
 
         // TextView ko reference karo
