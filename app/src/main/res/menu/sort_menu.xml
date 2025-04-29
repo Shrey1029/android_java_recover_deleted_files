@@ -37,5 +37,22 @@
         app:showAsAction="ifRoom|collapseActionView"
         app:actionViewClass="androidx.appcompat.widget.SearchView" />
 
+    <item
+        android:id="@+id/hideDuplicates"
+        android:title="Hide Duplicates"
+        android:showAsAction="never" />
+    <item
+        android:id="@+id/showOnlyDuplicates"
+        android:title="Show Only Duplicates"
+        android:showAsAction="never" />
+
+    <item
+        android:id="@+id/showPathToggle"
+        android:title="Show Path"
+        android:checkable="true"
+        android:checked="false"
+        android:showAsAction="never" />
+
+
 
 </menu>

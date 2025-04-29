@@ -23,7 +23,7 @@ public class MainActivity2 extends Activity {
     private ProgressBar storageProgress;
     private Button btnPhoto, btnVideo, btnAudio, btnDocument, btnRecycle, btnhidden;
 
-    private Button btnOtherFiles;
+    private Button btnOtherFiles , manageduplicate;
     private static final int REQUEST_STORAGE_PERMISSION = 100;
     private static final int REQUEST_MANAGE_STORAGE_PERMISSION = 101;
 
@@ -106,6 +106,7 @@ public class MainActivity2 extends Activity {
         btnRecycle = findViewById(R.id.btnRecycle);
         btnhidden = findViewById(R.id.btnHidden);
         btnOtherFiles = findViewById(R.id.btnOtherFiles);
+       // manageduplicate = findViewById(R.id.manageduplicate);
     }
 
     private void displayStorageInfo() {
@@ -170,6 +171,7 @@ public class MainActivity2 extends Activity {
         btnRecycle.setOnClickListener(v -> navigateToRecycleBin());
         btnhidden.setOnClickListener(v -> navigateToHiddenFiles());
         btnOtherFiles.setOnClickListener(v -> navigateotherdata());
+      //  manageduplicate.setOnClickListener(v -> navigateduplicate());
     }
 
     private void navigateToCategory(String category) {
@@ -192,6 +194,10 @@ public class MainActivity2 extends Activity {
         Intent intent = new Intent(MainActivity2.this, OtherFilesActivity.class);
         startActivity(intent);
     }
+//    private void navigateduplicate(){
+//        Intent intent = new Intent(MainActivity2.this, Manageduplicate.class);
+//        startActivity(intent);
+//    }
     private void showToast(String message) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }

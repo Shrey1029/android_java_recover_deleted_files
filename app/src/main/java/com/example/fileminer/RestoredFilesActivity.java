@@ -46,7 +46,14 @@ import android.content.DialogInterface; // Import this
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.security.MessageDigest;
+import java.io.FileInputStream;
+
 
 public class RestoredFilesActivity extends AppCompatActivity {
 
@@ -65,6 +72,7 @@ public class RestoredFilesActivity extends AppCompatActivity {
     TextView noResultsText;
     private List<MediaItem> fullMediaItemList = new ArrayList<>();
     private  boolean isCaseSensitive = false;
+    private boolean showPath = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -247,25 +255,25 @@ public class RestoredFilesActivity extends AppCompatActivity {
     }
     private void filterFiles(String query) {
         if (query == null) query = "";
-        String searchQuery = query.trim(); // No toLowerCase() for case-sensitive search
+        String searchQuery = query.trim();
         List<MediaItem> filteredList = new ArrayList<>();
 
-        // If the search query is empty, display all files
         if (searchQuery.isEmpty()) {
             filteredList.addAll(fullMediaItemList);
         } else {
             for (MediaItem item : fullMediaItemList) {
                 if (item != null && item.name != null) {
                     String fileName = item.name; // Keep original case
+                    String filePath = item.path; // Assuming your MediaItem has a `path` field
 
-                    // Check case-sensitivity setting
                     if (!isCaseSensitive) {
-                        // For case-insensitive search, convert both the search query and file name to lowercase
                         searchQuery = searchQuery.toLowerCase();
                         fileName = fileName.toLowerCase();
+                        if (filePath != null) {
+                            filePath = filePath.toLowerCase();
+                        }
                     }
 
-                    // Apply search logic based on selected search type
                     switch (selectedSearchType) {
                         case "Contains":
                             if (fileName.contains(searchQuery)) filteredList.add(item);
@@ -275,6 +283,9 @@ public class RestoredFilesActivity extends AppCompatActivity {
                             break;
                         case "Ends With":
                             if (fileName.endsWith(searchQuery)) filteredList.add(item);
+                            break;
+                        case "Path": // <<<<< NEW CASE
+                            if (filePath != null && filePath.contains(searchQuery)) filteredList.add(item);
                             break;
                         default:
                             if (fileName.contains(searchQuery)) filteredList.add(item);
@@ -287,7 +298,6 @@ public class RestoredFilesActivity extends AppCompatActivity {
         restoredFiles.clear();
         restoredFiles.addAll(filteredList);
 
-        // Update UI with filtered results
         runOnUiThread(() -> {
             if (restoredFiles.isEmpty()) {
                 noResultsText.setVisibility(View.VISIBLE);
@@ -339,40 +349,200 @@ public class RestoredFilesActivity extends AppCompatActivity {
         } else if (item.getItemId() == R.id.deleteSelected) {
             deleteSelectedFiles();
             return true;
+        } else if (item.getItemId() == R.id.hideDuplicates) {
+            hideDuplicates();
+            return true;
+        } else if (item.getItemId() == R.id.showOnlyDuplicates) {
+            showOnlyDuplicates();
+            return true;
+        } else if (item.getItemId() == R.id.showPathToggle) {
+            showPath = !item.isChecked();
+            item.setChecked(showPath);
+
+            adapter.setShowPath(showPath); // <<<<< important line
+            return true;
         }
+
         if (item.getItemId() == R.id.action_search) {
             Toast.makeText(this, "Search Clicked", Toast.LENGTH_SHORT).show();
 
-            // Ensure fileList is populated before passing it
             loadFileList();
-
-            // Debugging log to check file list size
             Log.d("SearchBottomSheet", "File list size: " + fileList.size());
 
-            // Create the bottom sheet and pass the current selected search type and case sensitivity
             SearchBottomSheet bottomSheet = new SearchBottomSheet(this, selectedSearchType, isCaseSensitive, new SearchBottomSheet.OnSearchOptionSelectedListener() {
                 @Override
                 public void onSearchOptionSelected(String searchType, boolean caseSensitive) {
-                    // Update the selected search type and case sensitivity when the user makes a selection
-                    selectedSearchType = searchType; // Store the selected search type
-                    isCaseSensitive = caseSensitive; // Store case sensitivity setting
+                    selectedSearchType = searchType;
+                    isCaseSensitive = caseSensitive;
 
                     String caseSensitivity = caseSensitive ? "Case Sensitive" : "Case Insensitive";
                     Toast.makeText(RestoredFilesActivity.this, "Selected: " + searchType + " | " + caseSensitivity, Toast.LENGTH_SHORT).show();
-
-
-                    // Now use the selected search type and case sensitivity for filtering or other logic
                 }
             });
 
-            // Show Bottom Sheet for choosing search type
             bottomSheet.show(getSupportFragmentManager(), "SearchBottomSheet");
-
             return true;
         }
 
         return super.onOptionsItemSelected(item);
     }
+
+
+    // Utility method for generating hash
+    private String getFileHash(String filePath) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("MD5");
+            FileInputStream fis = new FileInputStream(filePath);
+
+            byte[] byteArray = new byte[1024];
+            int bytesRead;
+            int totalRead = 0;
+            int maxBytes = 1024 * 1024; // 1MB (can adjust this value as needed)
+
+            while ((bytesRead = fis.read(byteArray)) != -1 && totalRead < maxBytes) {
+                digest.update(byteArray, 0, bytesRead);
+                totalRead += bytesRead;
+            }
+            fis.close();
+
+            byte[] hashBytes = digest.digest();
+            StringBuilder sb = new StringBuilder();
+            for (byte b : hashBytes) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+
+    private class HideDuplicatesTask extends AsyncTask<Void, Void, List<MediaItem>> {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            Toast.makeText(RestoredFilesActivity.this, "Hiding duplicates, please wait...", Toast.LENGTH_SHORT).show();
+        }
+
+        @Override
+        protected List<MediaItem> doInBackground(Void... voids) {
+            Map<Long, List<MediaItem>> sizeMap = new HashMap<>();
+            for (MediaItem item : fullMediaItemList) {
+                if (item != null && item.path != null) {
+                    File file = new File(item.path);
+                    if (file.exists()) {
+                        long size = file.length();
+                        sizeMap.computeIfAbsent(size, k -> new ArrayList<>()).add(item);
+                    }
+                }
+            }
+
+            Set<String> seenHashes = new HashSet<>();
+            List<MediaItem> uniqueFiles = new ArrayList<>();
+
+            for (List<MediaItem> group : sizeMap.values()) {
+                if (group.size() == 1) {
+                    uniqueFiles.add(group.get(0)); // No need to hash
+                } else {
+                    for (MediaItem item : group) {
+                        String hash = getFileHash(item.path);
+                        if (hash != null && !seenHashes.contains(hash)) {
+                            seenHashes.add(hash);
+                            uniqueFiles.add(item);
+                        }
+                    }
+                }
+            }
+            return uniqueFiles;
+        }
+
+        @Override
+        protected void onPostExecute(List<MediaItem> result) {
+            restoredFiles.clear();
+            restoredFiles.addAll(result);
+            adapter.notifyDataSetChanged();
+            if (result.isEmpty()) {
+                Toast.makeText(RestoredFilesActivity.this, "No duplicate files found", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(RestoredFilesActivity.this, "Duplicates Hidden Based on Content", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private class ShowOnlyDuplicatesTask extends AsyncTask<Void, Void, List<MediaItem>> {
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            Toast.makeText(RestoredFilesActivity.this, "Finding duplicates, please wait...", Toast.LENGTH_SHORT).show();
+        }
+
+        @Override
+        protected List<MediaItem> doInBackground(Void... voids) {
+            Map<Long, List<MediaItem>> sizeMap = new HashMap<>();
+            for (MediaItem item : fullMediaItemList) {
+                if (item != null && item.path != null) {
+                    File file = new File(item.path);
+                    if (file.exists()) {
+                        long size = file.length();
+                        sizeMap.computeIfAbsent(size, k -> new ArrayList<>()).add(item);
+                    }
+                }
+            }
+
+            Map<String, Integer> hashCountMap = new HashMap<>();
+            Map<String, MediaItem> hashToItem = new HashMap<>();
+            List<MediaItem> duplicates = new ArrayList<>();
+
+            for (List<MediaItem> group : sizeMap.values()) {
+                if (group.size() > 1) {
+                    for (MediaItem item : group) {
+                        String hash = getFileHash(item.path);
+                        if (hash != null) {
+                            int count = hashCountMap.getOrDefault(hash, 0);
+                            hashCountMap.put(hash, count + 1);
+                            if (count == 1) {
+                                duplicates.add(hashToItem.get(hash));
+                                duplicates.add(item);
+                            } else if (count > 1) {
+                                duplicates.add(item);
+                            } else {
+                                hashToItem.put(hash, item);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return duplicates;
+        }
+
+        @Override
+        protected void onPostExecute(List<MediaItem> result) {
+            restoredFiles.clear();
+            restoredFiles.addAll(result);
+            adapter.notifyDataSetChanged();
+            if (result.isEmpty()) {
+                Toast.makeText(RestoredFilesActivity.this, "No duplicate files found", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(RestoredFilesActivity.this, "Showing Only Duplicates Based on Content", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    // Call these methods from your button clicks:
+    private void hideDuplicates() {
+        new HideDuplicatesTask().execute();
+    }
+
+    private void showOnlyDuplicates() {
+        new ShowOnlyDuplicatesTask().execute();
+    }
+
+
+
+
     private class LoadMediaFilesTask extends AsyncTask<Uri, Void, ArrayList<MediaItem>> {
         @Override
         protected void onPreExecute() {
@@ -539,7 +709,7 @@ public class RestoredFilesActivity extends AppCompatActivity {
 
     // MediaAdapter class
     private class MediaAdapter extends ArrayAdapter<MediaItem> {
-
+        private boolean showPath = false; // initially file name dikhayenge
         MediaAdapter(Activity context, ArrayList<MediaItem> mediaItems) {
             super(context, R.layout.media_list_item, mediaItems);
         }
@@ -563,6 +733,21 @@ public class RestoredFilesActivity extends AppCompatActivity {
 
             if (currentItem != null && currentItem.path != null) {
                 text1.setText(currentItem.name);
+
+                // Yahan toggle ka check hai
+                if (showPath) {
+                    File file = new File(currentItem.path);
+                    File parentFolderFile = file.getParentFile();
+
+                    if (parentFolderFile != null) {
+                        String parentFolder = parentFolderFile.getName();
+                        text1.setText(parentFolder + "/");
+                    } else {
+                        text1.setText(currentItem.name); // safety fallback
+                    }
+                } else {
+                    text1.setText(currentItem.name); // normal name
+                }
 
                 // Handle checkbox state
                 checkBox.setOnCheckedChangeListener(null);  // Remove any previous listener
@@ -603,6 +788,11 @@ public class RestoredFilesActivity extends AppCompatActivity {
             }
 
             return listItem;
+        }
+        // Yeh method se hum activity se toggle karenge path/file name
+        public void setShowPath(boolean showPath) {
+            this.showPath = showPath;
+            notifyDataSetChanged(); // Refresh list jab toggle kare
         }
 
         private void loadThumbnail(ImageView imageView, MediaItem currentItem) {
