@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.media.browse.MediaBrowser;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -29,10 +30,16 @@ import androidx.core.content.FileProvider;
 import com.bumptech.glide.Glide;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class OtherFilesActivity extends AppCompatActivity {
 
@@ -49,6 +56,7 @@ public class OtherFilesActivity extends AppCompatActivity {
     private List<MediaBrowser.MediaItem> restoredFiles = new ArrayList<>();
     private List<String> fileList1 = new ArrayList<>();
     TextView noResultsText;
+    private boolean showPath = false;
     private boolean isCaseSensitive = false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -229,20 +237,32 @@ public class OtherFilesActivity extends AppCompatActivity {
         } else {
             for (File file : fullFileList) {
                 String fileName = file.getName(); // Get the file name
+                String filePath = file.getAbsolutePath(); // Get the full path
 
                 // If case-insensitive search is selected, convert both to lowercase
                 if (!isCaseSensitive) {
                     searchQuery = searchQuery.toLowerCase();
                     fileName = fileName.toLowerCase();
+                    filePath = filePath.toLowerCase();
                 }
 
                 // Apply the search logic based on the selected search type
-                if (selectedSearchType.equals("Contains") && fileName.contains(searchQuery)) {
-                    filteredList.add(file);
-                } else if (selectedSearchType.equals("Starts With") && fileName.startsWith(searchQuery)) {
-                    filteredList.add(file);
-                } else if (selectedSearchType.equals("Ends With") && fileName.endsWith(searchQuery)) {
-                    filteredList.add(file);
+                switch (selectedSearchType) {
+                    case "Contains":
+                        if (fileName.contains(searchQuery)) filteredList.add(file);
+                        break;
+                    case "Starts With":
+                        if (fileName.startsWith(searchQuery)) filteredList.add(file);
+                        break;
+                    case "Ends With":
+                        if (fileName.endsWith(searchQuery)) filteredList.add(file);
+                        break;
+                    case "Path": // <<<< NEW
+                        if (filePath.contains(searchQuery)) filteredList.add(file);
+                        break;
+                    default:
+                        if (fileName.contains(searchQuery)) filteredList.add(file);
+                        break;
                 }
             }
         }
@@ -265,8 +285,7 @@ public class OtherFilesActivity extends AppCompatActivity {
             }
         });
     }
-
-
+    
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
@@ -283,48 +302,183 @@ public class OtherFilesActivity extends AppCompatActivity {
         } else if (id == R.id.deleteSelected) {
             deleteSelectedFiles();
             return true;
-        } else if (item.getItemId() == R.id.action_search) {
+        } else if (id == R.id.hideDuplicates) {
+            hideDuplicates();
+            return true;
+        } else if (id == R.id.showOnlyDuplicates) {
+            showOnlyDuplicates();
+            return true;
+        } else if (id == R.id.showPathToggle) {
+            showPath = !item.isChecked();
+            item.setChecked(showPath);
+
+            adapter.setShowPath(showPath);    // <-- यहाँ कॉल करो
+            return true;
+        }
+
+        else if (id == R.id.action_search) {
             Toast.makeText(this, "Search Clicked", Toast.LENGTH_SHORT).show();
 
-            // Ensure fileList is populated before passing it
             loadFileList();
 
-            // Convert fileList (List<File>) to List<String> (file names)
             List<String> fileNames = new ArrayList<>();
             for (File file : otherFiles) {
                 fileNames.add(file.getName());
             }
 
-            // Debugging log to check file list size
             Log.d("SearchBottomSheet", "File list size: " + fileNames.size());
 
-            // Create the bottom sheet and pass the current selected search type and case sensitivity
             SearchBottomSheet bottomSheet = new SearchBottomSheet(this, selectedSearchType, isCaseSensitive, new SearchBottomSheet.OnSearchOptionSelectedListener() {
                 @Override
                 public void onSearchOptionSelected(String searchType, boolean caseSensitive) {
-                    // Update the selected search type and case sensitivity when the user makes a selection
-                    selectedSearchType = searchType; // Store the selected search type
-                    isCaseSensitive = caseSensitive; // Store the case sensitivity setting
+                    selectedSearchType = searchType;
+                    isCaseSensitive = caseSensitive;
 
                     String caseSensitivity = caseSensitive ? "Case Sensitive" : "Case Insensitive";
                     Toast.makeText(OtherFilesActivity.this, "Selected: " + searchType + " | " + caseSensitivity, Toast.LENGTH_SHORT).show();
-
-
-                    // Now use the selected search type and case sensitivity for filtering or other logic
                 }
             });
 
-            // Show Bottom Sheet for choosing search type
             bottomSheet.show(getSupportFragmentManager(), "SearchBottomSheet");
-
             return true;
         }
 
-        // Sort files (if needed)
         sortFiles();
         if (adapter != null) adapter.notifyDataSetChanged();
         return true;
     }
+    // Hash function for file comparison based on content
+    private String getFileHash(String filePath) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("MD5");
+            FileInputStream fis = new FileInputStream(filePath);
+
+            byte[] byteArray = new byte[1024];
+            int bytesRead;
+            int totalRead = 0;
+            int maxBytes = 1024 * 1024; // 1MB limit
+
+            while ((bytesRead = fis.read(byteArray)) != -1 && totalRead < maxBytes) {
+                digest.update(byteArray, 0, bytesRead);
+                totalRead += bytesRead;
+            }
+            fis.close();
+
+            byte[] hashBytes = digest.digest();
+            StringBuilder sb = new StringBuilder();
+            for (byte b : hashBytes) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    // AsyncTask to hide duplicates based on content
+    private class HideDuplicatesTask extends AsyncTask<Void, Void, List<File>> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            Toast.makeText(OtherFilesActivity.this, "Hiding duplicates, please wait...", Toast.LENGTH_SHORT).show();
+        }
+
+        @Override
+        protected List<File> doInBackground(Void... voids) {
+            Set<String> seenHashes = new HashSet<>();
+            List<File> uniqueFiles = new ArrayList<>();
+
+            for (File file : otherFiles) {
+                if (file != null) {
+                    String filePath = file.getAbsolutePath();
+                    String fileHash = getFileHash(filePath);
+                    if (fileHash != null && !seenHashes.contains(fileHash)) {
+                        seenHashes.add(fileHash);
+                        uniqueFiles.add(file);
+                    }
+                }
+            }
+            return uniqueFiles;
+        }
+
+        @Override
+        protected void onPostExecute(List<File> result) {
+            super.onPostExecute(result);
+            if (result.isEmpty()) {
+                Toast.makeText(OtherFilesActivity.this, "No duplicates found", Toast.LENGTH_SHORT).show();
+            } else {
+                otherFiles.clear();
+                otherFiles.addAll(result);
+                adapter.notifyDataSetChanged();
+                Toast.makeText(OtherFilesActivity.this, "Duplicates Hidden Based on Content", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    // AsyncTask to show only duplicates based on content
+    private class ShowOnlyDuplicatesTask extends AsyncTask<Void, Void, List<File>> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            Toast.makeText(OtherFilesActivity.this, "Finding duplicates, please wait...", Toast.LENGTH_SHORT).show();
+        }
+
+        @Override
+        protected List<File> doInBackground(Void... voids) {
+            Map<String, Integer> hashCountMap = new HashMap<>();
+            List<File> duplicatesOnly = new ArrayList<>();
+
+            for (File file : otherFiles) {
+                if (file != null) {
+                    String filePath = file.getAbsolutePath();
+                    String fileHash = getFileHash(filePath);
+                    if (fileHash != null) {
+                        hashCountMap.put(fileHash, hashCountMap.getOrDefault(fileHash, 0) + 1);
+                    }
+                }
+            }
+
+            for (File file : otherFiles) {
+                if (file != null) {
+                    String filePath = file.getAbsolutePath();
+                    String fileHash = getFileHash(filePath);
+                    if (fileHash != null && hashCountMap.get(fileHash) > 1) {
+                        duplicatesOnly.add(file);
+                    }
+                }
+            }
+
+            return duplicatesOnly;
+        }
+
+        @Override
+        protected void onPostExecute(List<File> result) {
+            super.onPostExecute(result);
+            if (result.isEmpty()) {
+                Toast.makeText(OtherFilesActivity.this, "No duplicate files found", Toast.LENGTH_SHORT).show();
+            } else {
+                otherFiles.clear();
+                otherFiles.addAll(result);
+                adapter.notifyDataSetChanged();
+                Toast.makeText(OtherFilesActivity.this, "Showing Only Duplicates Based on Content", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    // Call these from your button clicks:
+    private void hideDuplicates() {
+        new HideDuplicatesTask().execute();
+    }
+
+    private void showOnlyDuplicates() {
+        new ShowOnlyDuplicatesTask().execute();
+    }
+
+
 
     private void loadFileList() {
         if (fileList == null) fileList = new ArrayList<>();
@@ -359,10 +513,17 @@ public class OtherFilesActivity extends AppCompatActivity {
     private class GridAdapter extends BaseAdapter {
         private final Activity context;
         private final List<File> files;
+        private boolean showPath = false;  // Flag to toggle path visibility
 
         GridAdapter(Activity context, List<File> files) {
             this.context = context;
             this.files = files;
+        }
+
+        // Method to update showPath flag
+        public void setShowPath(boolean showPath) {
+            this.showPath = showPath;
+            notifyDataSetChanged();  // Refresh the grid to apply changes
         }
 
         @Override
@@ -395,9 +556,20 @@ public class OtherFilesActivity extends AppCompatActivity {
             CheckBox checkBox = view.findViewById(R.id.selectCheckbox);
 
             File file = files.get(position);
-            fileName.setText(file.getName());
 
-            // Set thumbnail
+            // Show folder path or file name based on the toggle
+            if (showPath) {
+                File parentFolderFile = file.getParentFile();
+                if (parentFolderFile != null) {
+                    fileName.setText(parentFolderFile.getName() + "/");
+                } else {
+                    fileName.setText(file.getName());  // Fallback if parent folder is null
+                }
+            } else {
+                fileName.setText(file.getName());
+            }
+
+            // Set thumbnail based on file type
             if (file.getName().endsWith(".xls") || file.getName().endsWith(".xlsx")) {
                 fileThumbnail.setImageResource(R.drawable.ic_excel);
             } else if (file.getName().endsWith(".ppt") || file.getName().endsWith(".ext4")) {
@@ -446,8 +618,7 @@ public class OtherFilesActivity extends AppCompatActivity {
                         .show();
             });
 
-
-            // Checkbox selection
+            // Checkbox selection logic
             checkBox.setOnCheckedChangeListener(null);
             checkBox.setChecked(selectedFiles.contains(file));
             checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -458,7 +629,7 @@ public class OtherFilesActivity extends AppCompatActivity {
             return view;
         }
 
-        private String getMimeType(String path) {
+    private String getMimeType(String path) {
             try {
                 String extension = MimeTypeMap.getFileExtensionFromUrl(Uri.fromFile(new File(path)).toString());
                 if (extension != null && !extension.isEmpty()) {

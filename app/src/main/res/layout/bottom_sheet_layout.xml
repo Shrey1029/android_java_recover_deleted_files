@@ -47,6 +47,13 @@
             android:text="Ends With"
             android:paddingEnd="16dp"
             android:paddingStart="16dp" />
+        <RadioButton
+            android:id="@+id/radioPath"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="File Path"
+            android:paddingEnd="16dp"
+            android:paddingStart="16dp" />
 
     </RadioGroup>
 
@@ -90,5 +97,6 @@
             android:paddingEnd="16dp"
             android:paddingStart="16dp" />
     </RadioGroup>
+
 
 </LinearLayout>
