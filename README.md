@@ -14,9 +14,7 @@ A file manager app that helps you recover deleted files, view hidden data, and m
 
 ## 🛠 Build Steps
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Dhaneshwari09/android_java_recover_deleted_files.git
+1. fork this project
 2. Open the project in Android Studio
 3. Wait for Gradle sync to finish
 4. Connect a real device or emulator
