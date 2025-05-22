@@ -92,6 +92,13 @@ We welcome contributions! To get started:
 
 Please review open issues and the roadmap for ideas on what to work on. For questions, open an issue or join the discussion.
 
+## Contributing Guidelines
+
+- **Every pull request (PR) must include relevant app screenshots showing the changes made.**
+- Add these screenshots to the `screenshots/` folder in the repository.
+- Update the Screenshots section in the README to include the new screenshots with appropriate captions or context.
+- Ensure screenshots are clearly labeled (e.g., `feature-login.png`, `fix-navbar-bug.png`) and correspond to the PR functionality.
+
 ## 📱 App Screenshots
 <img src="https://github.com/user-attachments/assets/95fd88f8-802e-40d0-91db-ddda5180bbf0" alt="Home Screen" width="400"/>
 
