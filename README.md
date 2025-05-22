@@ -94,5 +94,6 @@ Please review open issues and the roadmap for ideas on what to work on. For ques
 
 ## 📱 App Screenshots
 <img src="https://github.com/user-attachments/assets/95fd88f8-802e-40d0-91db-ddda5180bbf0" alt="Home Screen" width="400"/>
+
 ---
 Happy coding! If you have any questions, feel free to ask in the issues section.
