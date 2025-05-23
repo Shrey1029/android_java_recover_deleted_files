@@ -6,6 +6,8 @@ import android.media.browse.MediaBrowser;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -14,6 +16,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.MimeTypeMap;
 import android.widget.BaseAdapter;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.GridView;
 import android.widget.ImageView;
@@ -160,71 +163,6 @@ public class OtherFilesActivity extends AppCompatActivity {
         Collections.sort(otherFiles, isAscending ? comparator : comparator.reversed());
     }
 
-    private void deleteSelectedFiles() {
-        if (selectedFiles.isEmpty()) {
-            Toast.makeText(this, "No files selected for deletion", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        List<File> deletedFiles = new ArrayList<>();
-
-        for (File file : selectedFiles) {
-            if (file.exists()) {
-                if (file.delete()) {
-                    deletedFiles.add(file);
-                } else {
-                    Toast.makeText(this, "Failed to delete: " + file.getName(), Toast.LENGTH_SHORT).show();
-                }
-            }
-        }
-
-        if (!deletedFiles.isEmpty()) {
-            otherFiles.removeAll(deletedFiles);
-            selectedFiles.removeAll(deletedFiles);
-            if (adapter != null) adapter.notifyDataSetChanged();
-            Toast.makeText(this, "Selected files deleted successfully!", Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(this, "No files were deleted.", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.sort_menu, menu);
-        MenuItem searchItem = menu.findItem(R.id.action_search);
-
-        if (searchItem != null) {
-            androidx.appcompat.widget.SearchView searchView =
-                    (androidx.appcompat.widget.SearchView) searchItem.getActionView();
-
-            if (searchView != null) {
-                searchView.setQueryHint("Search Files...");
-                searchView.setOnQueryTextListener(new androidx.appcompat.widget.SearchView.OnQueryTextListener() {
-                    @Override
-                    public boolean onQueryTextSubmit(String query) {
-                        filterFiles(query);
-                        return true;
-                    }
-
-                    @Override
-                    public boolean onQueryTextChange(String newText) {
-                        filterFiles(newText);
-                        return true;
-                    }
-                });
-
-                searchItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS |
-                        MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
-
-                searchView.setOnCloseListener(() -> {
-                    loadFileList();
-                    return false;
-                });
-            }
-        }
-        return true;
-    }
 
     private void filterFiles(String query) {
         if (query == null) query = "";
@@ -285,7 +223,7 @@ public class OtherFilesActivity extends AppCompatActivity {
             }
         });
     }
-    
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
@@ -312,13 +250,21 @@ public class OtherFilesActivity extends AppCompatActivity {
             showPath = !item.isChecked();
             item.setChecked(showPath);
 
-            adapter.setShowPath(showPath);    // <-- यहाँ कॉल करो
+            adapter.setShowPath(showPath);    // <-- Update call
             return true;
-        }
+        } else if (id == R.id.selectAll) {
+            boolean isChecked = !item.isChecked();
+            item.setChecked(isChecked);
 
-        else if (id == R.id.action_search) {
-            Toast.makeText(this, "Search Clicked", Toast.LENGTH_SHORT).show();
-
+            if (isChecked) {
+                selectAllFiles();
+                item.setTitle("Deselect All");
+            } else {
+                deselectAllFiles();
+                item.setTitle("Select All");
+            }
+            return true;
+        } else if (id == R.id.action_filter) {
             loadFileList();
 
             List<String> fileNames = new ArrayList<>();
@@ -347,7 +293,100 @@ public class OtherFilesActivity extends AppCompatActivity {
         if (adapter != null) adapter.notifyDataSetChanged();
         return true;
     }
-    // Hash function for file comparison based on content
+
+    // Select all
+    private void selectAllFiles() {
+        selectedFiles.clear();
+        selectedFiles.addAll(otherFiles); // otherFiles = your full file list
+        adapter.setSelectedFiles(new HashSet<>(selectedFiles)); // Convert List to Set here
+        adapter.notifyDataSetChanged();
+    }
+
+    // Deselect all
+    private void deselectAllFiles() {
+        selectedFiles.clear();
+        adapter.setSelectedFiles(new HashSet<>(selectedFiles)); // Convert List to Set here
+        adapter.notifyDataSetChanged();
+    }
+
+    // Updated deletion function
+    private void deleteSelectedFiles() {
+        if (selectedFiles.isEmpty()) {
+            Toast.makeText(this, "No files selected for deletion", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        List<File> deletedFiles = new ArrayList<>();
+
+        for (File file : selectedFiles) {
+            try {
+                if (file.exists() && file.delete()) {
+                    deletedFiles.add(file);
+                }
+            } catch (Exception e) {
+                Log.e("FileDelete", "Error deleting file: " + file.getAbsolutePath(), e);
+            }
+        }
+
+        // Remove deleted files from lists safely
+        otherFiles.removeAll(deletedFiles);
+        selectedFiles.removeAll(deletedFiles);
+        fullFileList.removeAll(deletedFiles);
+
+        runOnUiThread(() -> {
+            adapter.setSelectedFiles(new HashSet<>(selectedFiles));
+            adapter.notifyDataSetChanged();
+            Toast.makeText(this, "Selected files deleted successfully!", Toast.LENGTH_SHORT).show();
+        });
+    }
+
+
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.sort_menu, menu);
+        MenuItem searchItem = menu.findItem(R.id.action_search);
+        MenuItem filterItem = menu.findItem(R.id.action_filter);
+
+        // For search icon
+        if (searchItem != null) {
+            androidx.appcompat.widget.SearchView searchView =
+                    (androidx.appcompat.widget.SearchView) searchItem.getActionView();
+
+            if (searchView != null) {
+                searchView.setQueryHint("Search Files...");
+                searchView.setOnQueryTextListener(new androidx.appcompat.widget.SearchView.OnQueryTextListener() {
+                    @Override
+                    public boolean onQueryTextSubmit(String query) {
+                        filterFiles(query);
+                        return true;
+                    }
+
+                    @Override
+                    public boolean onQueryTextChange(String newText) {
+                        filterFiles(newText);
+                        return true;
+                    }
+                });
+
+                searchItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS |
+                        MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
+
+                searchView.setOnCloseListener(() -> {
+                    loadFileList();
+                    return false;
+                });
+            }
+        }
+
+        // For filter icon, always visible
+        if (filterItem != null) {
+            filterItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+        }
+
+        return true;
+    }
+
     private String getFileHash(String filePath) {
         try {
             MessageDigest digest = MessageDigest.getInstance("MD5");
@@ -487,10 +526,13 @@ public class OtherFilesActivity extends AppCompatActivity {
         if (fullFileList == null) fullFileList = new ArrayList<>();
         else fullFileList.clear();
 
-        File directory = new File("/storage/emulated/0/");
-        searchFiles(directory);
+        if (otherFiles == null) otherFiles = new ArrayList<>();
+        else otherFiles.clear();
 
-        fullFileList.addAll(otherFiles); // ✅ Ensure full file list is maintained
+        File directory = new File("/storage/emulated/0/");
+        searchFiles(directory); // fills otherFiles
+
+        fullFileList.addAll(otherFiles);
 
         Log.d("FileLoader", "Total files loaded: " + fullFileList.size());
 
@@ -500,6 +542,7 @@ public class OtherFilesActivity extends AppCompatActivity {
             }
         });
     }
+
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         MenuItem toggleItem = menu.findItem(R.id.sortOrderToggle);
@@ -514,6 +557,8 @@ public class OtherFilesActivity extends AppCompatActivity {
         private final Activity context;
         private final List<File> files;
         private boolean showPath = false;  // Flag to toggle path visibility
+        private Set<File> selectedFiless = new HashSet<>();  // <-- Add this
+
 
         GridAdapter(Activity context, List<File> files) {
             this.context = context;
@@ -524,6 +569,11 @@ public class OtherFilesActivity extends AppCompatActivity {
         public void setShowPath(boolean showPath) {
             this.showPath = showPath;
             notifyDataSetChanged();  // Refresh the grid to apply changes
+        }
+
+        public void setSelectedFiles(Set<File> selectedFiles) {
+            this.selectedFiless = selectedFiles;
+            notifyDataSetChanged();
         }
 
         @Override
@@ -602,21 +652,38 @@ public class OtherFilesActivity extends AppCompatActivity {
 
             // Delete button
             deleteBtn.setOnClickListener(v -> {
-                new AlertDialog.Builder(context)
+                AlertDialog dialog = new AlertDialog.Builder(context)
                         .setTitle("Delete File")
                         .setMessage("Are you sure you want to delete this file?")
-                        .setPositiveButton("Yes", (dialog, which) -> {
-                            if (file.delete()) {
-                                Toast.makeText(context, "File deleted", Toast.LENGTH_SHORT).show();
-                                files.remove(position);
-                                notifyDataSetChanged();
-                            } else {
-                                Toast.makeText(context, "Failed to delete file", Toast.LENGTH_SHORT).show();
+                        .setPositiveButton("Yes", null) // Set null to override later
+                        .setNegativeButton("No", (d, w) -> d.dismiss())
+                        .create();
+
+                dialog.setOnShowListener(d -> {
+                    Button positive = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+                    positive.setOnClickListener(v1 -> {
+                        dialog.dismiss(); // 🔴 Dismiss immediately on click
+
+                        if (file.delete()) {
+                            Toast.makeText(context, "File deleted", Toast.LENGTH_SHORT).show();
+
+                            files.remove(position);
+                            notifyDataSetChanged();
+
+                            // Optional: reload whole list again
+                            if (context instanceof OtherFilesActivity) {
+                                ((OtherFilesActivity) context).loadFileList();
                             }
-                        })
-                        .setNegativeButton("No", (dialog, which) -> dialog.dismiss())
-                        .show();
+
+                        } else {
+                            Toast.makeText(context, "Failed to delete file", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                });
+
+                dialog.show();
             });
+
 
             // Checkbox selection logic
             checkBox.setOnCheckedChangeListener(null);
@@ -629,7 +696,7 @@ public class OtherFilesActivity extends AppCompatActivity {
             return view;
         }
 
-    private String getMimeType(String path) {
+        private String getMimeType(String path) {
             try {
                 String extension = MimeTypeMap.getFileExtensionFromUrl(Uri.fromFile(new File(path)).toString());
                 if (extension != null && !extension.isEmpty()) {
@@ -641,6 +708,5 @@ public class OtherFilesActivity extends AppCompatActivity {
             }
             return "/";
         }
-
     }
 }

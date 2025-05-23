@@ -98,3 +98,4 @@ public class SearchBottomSheet extends BottomSheetDialogFragment {
         }
     }
 }
+
