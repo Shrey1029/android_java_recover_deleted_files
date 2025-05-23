@@ -24,18 +24,39 @@
         android:title="Ascending"
         android:showAsAction="never"/>
 
+    <item
+        android:id="@+id/selectAll"
+        android:title="Select All File"
+        android:checkable="true"
+        android:checked="false"
+        android:showAsAction="never" />
+
+
     <!-- Bulk Delete Option -->
     <item
         android:id="@+id/deleteSelected"
         android:title="Delete Selected Files"
         android:icon="@android:drawable/ic_menu_delete"
         android:showAsAction="ifRoom"/>
+<!--    <item-->
+<!--        android:id="@+id/action_search"-->
+<!--        android:title="Search"-->
+<!--        android:icon="@android:drawable/ic_menu_search"-->
+<!--        app:showAsAction="ifRoom|collapseActionView"-->
+<!--        app:actionViewClass="androidx.appcompat.widget.SearchView" />-->
     <item
         android:id="@+id/action_search"
         android:title="Search"
         android:icon="@android:drawable/ic_menu_search"
-        app:showAsAction="ifRoom|collapseActionView"
+        app:showAsAction="always|collapseActionView"
         app:actionViewClass="androidx.appcompat.widget.SearchView" />
+
+    <item
+        android:id="@+id/action_filter"
+        android:title="Filter"
+        android:icon="@drawable/ic_filter_list"
+        app:showAsAction="ifRoom"/>
+
 
     <item
         android:id="@+id/hideDuplicates"

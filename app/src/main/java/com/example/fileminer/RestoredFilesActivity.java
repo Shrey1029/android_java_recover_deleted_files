@@ -14,6 +14,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
+import android.text.InputType;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -23,6 +24,7 @@ import android.webkit.MimeTypeMap;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -73,6 +75,7 @@ public class RestoredFilesActivity extends AppCompatActivity {
     private List<MediaItem> fullMediaItemList = new ArrayList<>();
     private  boolean isCaseSensitive = false;
     private boolean showPath = false;
+    private  boolean setSelected = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -119,49 +122,6 @@ public class RestoredFilesActivity extends AppCompatActivity {
                     new LoadAllFilesTask().execute();
                     break;
             }
-        }
-    }
-
-
-    private void deleteFile(MediaItem item) {
-        new AlertDialog.Builder(this)
-                .setTitle("Delete File")
-                .setMessage("Are you sure you want to delete this file?")
-                .setPositiveButton("Yes, Delete", (dialog, which) -> {
-                    File file = new File(item.path);
-                    if (file.exists() && file.delete()) {
-                        restoredFiles.remove(item);
-                        adapter.notifyDataSetChanged();
-                        Toast.makeText(this, "File deleted successfully", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(this, "Failed to delete file", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .setNegativeButton("No, Cancel", (dialog, which) -> dialog.dismiss())
-                .show();
-    }
-
-    private void deleteSelectedFiles() {
-        ArrayList<MediaItem> itemsToDelete = new ArrayList<>();
-        for (MediaItem item : restoredFiles) {
-            if (item.isSelected) {
-                File file = new File(item.path);
-                if (file.exists()) {
-                    if (file.delete()) {
-                        itemsToDelete.add(item);
-                    } else {
-                        Toast.makeText(this, "Failed to delete: " + item.name, Toast.LENGTH_SHORT).show();
-                    }
-                }
-            }
-        }
-
-        if (!itemsToDelete.isEmpty()) {
-            restoredFiles.removeAll(itemsToDelete);
-            adapter.notifyDataSetChanged();
-            Toast.makeText(this, "Selected files deleted successfully!", Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(this, "No files were deleted.", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -218,41 +178,7 @@ public class RestoredFilesActivity extends AppCompatActivity {
                     isAscending ? Long.compare(a.dateModified, b.dateModified) : Long.compare(b.dateModified, a.dateModified));
         }
     }
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.sort_menu, menu);
 
-        MenuItem searchItem = menu.findItem(R.id.action_search);
-
-        if (searchItem != null) {
-            SearchView searchView = (SearchView) searchItem.getActionView();
-
-            if (searchView != null) {
-                searchView.setQueryHint("Search Files...");
-
-                searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-                    @Override
-                    public boolean onQueryTextSubmit(String query) {
-                        if (!query.isEmpty()) {
-                            filterFiles(query);
-                        }
-                        return true;
-                    }
-
-                    @Override
-                    public boolean onQueryTextChange(String newText) {
-                        filterFiles(newText);
-                        return true;
-                    }
-                });
-
-                // Ensure search icon is always visible
-                searchItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS | MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
-            }
-        }
-
-        return true;
-    }
     private void filterFiles(String query) {
         if (query == null) query = "";
         String searchQuery = query.trim();
@@ -264,7 +190,7 @@ public class RestoredFilesActivity extends AppCompatActivity {
             for (MediaItem item : fullMediaItemList) {
                 if (item != null && item.name != null) {
                     String fileName = item.name; // Keep original case
-                    String filePath = item.path; // Assuming your MediaItem has a `path` field
+                    String filePath = item.path; // Assuming your MediaItem has a path field
 
                     if (!isCaseSensitive) {
                         searchQuery = searchQuery.toLowerCase();
@@ -321,65 +247,67 @@ public class RestoredFilesActivity extends AppCompatActivity {
         }
     }
 
-
-
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        if (item.getItemId() == R.id.sortByName) {
+        int id = item.getItemId();
+
+        if (id == R.id.sortByName) {
             currentSort = "name";
             sortFiles();
             adapter.notifyDataSetChanged();
             return true;
-        } else if (item.getItemId() == R.id.sortBySize) {
+        } else if (id == R.id.sortBySize) {
             currentSort = "size";
             sortFiles();
             adapter.notifyDataSetChanged();
             return true;
-        } else if (item.getItemId() == R.id.sortByTime) {
+        } else if (id == R.id.sortByTime) {
             currentSort = "time";
             sortFiles();
             adapter.notifyDataSetChanged();
             return true;
-        } else if (item.getItemId() == R.id.sortOrderToggle) {
+        } else if (id == R.id.sortOrderToggle) {
             isAscending = !isAscending;
             item.setTitle(isAscending ? "Ascending" : "Descending");
             sortFiles();
             adapter.notifyDataSetChanged();
             return true;
-        } else if (item.getItemId() == R.id.deleteSelected) {
-            deleteSelectedFiles();
+        } else if (id == R.id.deleteSelected) {
+            deleteSelectedFiles();  // ✅ Updated method
             return true;
-        } else if (item.getItemId() == R.id.hideDuplicates) {
+        } else if (id == R.id.hideDuplicates) {
             hideDuplicates();
             return true;
-        } else if (item.getItemId() == R.id.showOnlyDuplicates) {
+        } else if (id == R.id.showOnlyDuplicates) {
             showOnlyDuplicates();
             return true;
-        } else if (item.getItemId() == R.id.showPathToggle) {
+        } else if (id == R.id.showPathToggle) {
             showPath = !item.isChecked();
             item.setChecked(showPath);
-
-            adapter.setShowPath(showPath); // <<<<< important line
+            adapter.setShowPath(showPath);
             return true;
-        }
-
-        if (item.getItemId() == R.id.action_search) {
-            Toast.makeText(this, "Search Clicked", Toast.LENGTH_SHORT).show();
-
+        } else if (id == R.id.selectAll) {
+            boolean selectAll = !item.isChecked();
+            item.setChecked(selectAll);
+            item.setTitle(selectAll ? "Deselect All File" : "Select All File");
+            selectAllFiles(selectAll);
+            adapter.notifyDataSetChanged();  // ✅ Refresh view
+            return true;
+        } else if (id == R.id.action_filter) {
             loadFileList();
-            Log.d("SearchBottomSheet", "File list size: " + fileList.size());
+            SearchBottomSheet bottomSheet = new SearchBottomSheet(this, selectedSearchType, isCaseSensitive,
+                    new SearchBottomSheet.OnSearchOptionSelectedListener() {
+                        @Override
+                        public void onSearchOptionSelected(String searchType, boolean caseSensitive) {
+                            selectedSearchType = searchType;
+                            isCaseSensitive = caseSensitive;
 
-            SearchBottomSheet bottomSheet = new SearchBottomSheet(this, selectedSearchType, isCaseSensitive, new SearchBottomSheet.OnSearchOptionSelectedListener() {
-                @Override
-                public void onSearchOptionSelected(String searchType, boolean caseSensitive) {
-                    selectedSearchType = searchType;
-                    isCaseSensitive = caseSensitive;
-
-                    String caseSensitivity = caseSensitive ? "Case Sensitive" : "Case Insensitive";
-                    Toast.makeText(RestoredFilesActivity.this, "Selected: " + searchType + " | " + caseSensitivity, Toast.LENGTH_SHORT).show();
-                }
-            });
-
+                            String caseText = caseSensitive ? "Case Sensitive" : "Case Insensitive";
+                            Toast.makeText(RestoredFilesActivity.this,
+                                    "Selected: " + searchType + " | " + caseText,
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    });
             bottomSheet.show(getSupportFragmentManager(), "SearchBottomSheet");
             return true;
         }
@@ -387,6 +315,98 @@ public class RestoredFilesActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    // ✅ Select All or Deselect All
+    private void selectAllFiles(boolean select) {
+        for (MediaItem item : fullMediaItemList) {
+            item.setSelected(select);
+        }
+    }
+
+    // ✅ Single file delete (with confirmation)
+    private void deleteFile(MediaItem item) {
+        new AlertDialog.Builder(this)
+                .setTitle("Delete File")
+                .setMessage("Are you sure you want to delete this file?")
+                .setPositiveButton("Yes, Delete", (dialog, which) -> {
+                    File file = new File(item.path);
+                    if (file.exists() && file.delete()) {
+                        restoredFiles.remove(item);
+                        fullMediaItemList.removeIf(mediaItem -> mediaItem.path.equals(item.path)); // ✅ Also remove from full list
+                        adapter.notifyDataSetChanged();
+                        Toast.makeText(this, "File deleted successfully", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(this, "Failed to delete file", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("No, Cancel", (dialog, which) -> dialog.dismiss())
+                .show();
+    }
+
+    // ✅ Delete all selected files (Select All + Delete)
+    private void deleteSelectedFiles() {
+        ArrayList<MediaItem> itemsToDelete = new ArrayList<>();
+
+        for (MediaItem item : restoredFiles) {
+            if (item.isSelected) {
+                File file = new File(item.path);
+                if (file.exists() && file.delete()) {
+                    itemsToDelete.add(item);
+                    fullMediaItemList.removeIf(mediaItem -> mediaItem.path.equals(item.path)); // ✅ remove from full list
+                } else {
+                    Toast.makeText(this, "Failed to delete: " + item.name, Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
+
+        if (!itemsToDelete.isEmpty()) {
+            restoredFiles.removeAll(itemsToDelete);
+            adapter.notifyDataSetChanged();
+            Toast.makeText(this, "Selected files deleted successfully!", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "No files were deleted.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.sort_menu, menu);
+
+        // For search icon
+        MenuItem searchItem = menu.findItem(R.id.action_search);
+        if (searchItem != null) {
+            SearchView searchView = (SearchView) searchItem.getActionView();
+            if (searchView != null) {
+                searchView.setQueryHint("Search Files...");
+
+                searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+                    @Override
+                    public boolean onQueryTextSubmit(String query) {
+                        if (!query.isEmpty()) {
+                            filterFiles(query);  // Your filter method here
+                        }
+                        return true;
+                    }
+
+                    @Override
+                    public boolean onQueryTextChange(String newText) {
+                        filterFiles(newText);  // Real-time filtering
+                        return true;
+                    }
+                });
+
+                // Ensure search icon is always visible and collapses to search when clicked
+                searchItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS | MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
+            }
+        }
+
+        // For filter icon, always visible
+        MenuItem filterItem = menu.findItem(R.id.action_filter);
+        if (filterItem != null) {
+            filterItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+        }
+
+        return true;
+    }
 
     // Utility method for generating hash
     private String getFileHash(String filePath) {
@@ -678,12 +698,12 @@ public class RestoredFilesActivity extends AppCompatActivity {
         }
     }
 
-    private static class MediaItem {
+    private class MediaItem {
         String name;
         String path;
         long size;
         long dateModified;
-        boolean isSelected = false;
+        private boolean isSelected = false;
 
         MediaItem(String name, String path) {
             this.name = name;
@@ -704,6 +724,14 @@ public class RestoredFilesActivity extends AppCompatActivity {
                 this.size = 0;
                 this.dateModified = 0;
             }
+        }
+
+        public boolean isSelected() {
+            return isSelected;
+        }
+
+        public void setSelected(boolean selected) {
+            this.isSelected = selected;
         }
     }
 
