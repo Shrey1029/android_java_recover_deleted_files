@@ -5,7 +5,7 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#121212"
+    android:background="@color/colorSurface"
     tools:context=".MainActivity2">
 
     <!-- App Title -->
@@ -13,8 +13,8 @@
         android:id="@+id/appTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="FILE MINER"
-        android:textColor="#FFFFFF"
+        android:text=" FILE JUNK CLEANER"
+        android:textColor="@color/colorOnPrimary"
         android:textSize="24sp"
         android:textStyle="bold"
         android:layout_centerHorizontal="true"
@@ -46,7 +46,7 @@
             android:layout_height="wrap_content"
             android:text="0%"
             android:textSize="22sp"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/colorOnPrimary"
             android:textStyle="bold"
             android:layout_centerInParent="true" />
     </RelativeLayout>
@@ -65,16 +65,15 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="0 Used"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/colorOnPrimary"
             android:textSize="18sp"
             android:layout_weight="1" />
-
         <TextView
             android:id="@+id/freeStorage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="0 GB Free"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/colorOnPrimary"
             android:textSize="18sp"
             android:layout_weight="1"
             android:gravity="end" />
@@ -103,7 +102,7 @@
             android:textSize="14sp"
             android:drawablePadding="2dp"
             android:drawableTop="@drawable/ic_photo"
-            android:backgroundTint="#1E1E1E"
+            android:backgroundTint="#00D084"
             android:gravity="center"
             android:layout_margin="6dp"/>
 
@@ -120,7 +119,7 @@
             android:textSize="14sp"
             android:drawablePadding="2dp"
             android:drawableTop="@drawable/ic_video"
-            android:backgroundTint="#1E1E1E"
+            android:backgroundTint="#00D084"
             android:gravity="center"
             android:layout_margin="6dp"/>
 
@@ -137,7 +136,7 @@
             android:textSize="14sp"
             android:drawablePadding="2dp"
             android:drawableTop="@drawable/ic_audio"
-            android:backgroundTint="#1E1E1E"
+            android:backgroundTint="#00D084"
             android:gravity="center"
             android:layout_margin="6dp"/>
 
@@ -154,7 +153,7 @@
             android:textSize="14sp"
             android:drawablePadding="2dp"
             android:drawableTop="@drawable/ic_document"
-            android:backgroundTint="#1E1E1E"
+            android:backgroundTint="#00D084"
             android:gravity="center"
             android:layout_margin="6dp"/>
     </GridLayout>
@@ -165,20 +164,8 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:orientation="horizontal"
-        android:weightSum="4"
+        android:weightSum="3"
         android:padding="8dp">
-
-        <Button
-            android:id="@+id/btnRecover"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:text="Recover"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp"
-            android:drawableTop="@drawable/ic_recover"
-            android:backgroundTint="#1E1E1E"
-            android:gravity="center" />
 
         <Button
             android:id="@+id/btnRecycle"
@@ -189,7 +176,7 @@
             android:textColor="#FFFFFF"
             android:textSize="14sp"
             android:drawableTop="@drawable/ic_recycle"
-            android:backgroundTint="#1E1E1E"
+            android:backgroundTint="#00D084"
             android:gravity="center" />
 
         <Button
@@ -201,7 +188,7 @@
             android:textColor="#FFFFFF"
             android:textSize="14sp"
             android:drawableTop="@drawable/ic_hidden"
-            android:backgroundTint="#1E1E1E"
+            android:backgroundTint="#00D084"
             android:gravity="center" />
 
         <Button
@@ -213,7 +200,7 @@
             android:textColor="#FFFFFF"
             android:textSize="14sp"
             android:drawableTop="@drawable/ic_other_files"
-            android:backgroundTint="#1E1E1E"
+            android:backgroundTint="#00D084"
             android:gravity="center" />
 
     </LinearLayout>

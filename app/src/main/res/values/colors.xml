@@ -8,7 +8,20 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- Newly Added Colors -->
-    <color name="light_gray">#FFD3D3D3</color>  <!-- Soft Gray for Background -->
-    <color name="red">#FFFF0000</color>  <!-- Bright Red for Delete Icon -->
+    <!-- or any light background color -->
+
+    <!-- bacground color -->
+    <color name="colorSurface">#FFFFFF</color>
+    <!--    text color -->
+    <color name="colorOnPrimary">#0F0E0E</color>
+    <!--    catgory button in home section -->
+    <color name="colorPrimary">#00D084</color>
+    <color name="colorPrimaryVariant">#26A65B</color>
+
+    <!--    Bottom bar -->
+    <color name="colorAccent">#0F0F0E</color>
+    <color name="colorOnBackground">#222222</color>
+
+
+
 </resources>

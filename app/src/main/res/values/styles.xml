@@ -8,4 +8,12 @@
         <item name="android:statusBarColor">#000000</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
+
+<!--    top bar -->
+    <style name="ToolbarWhiteText" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
+        <item name="android:textColorPrimary">@android:color/white</item>
+        <item name="android:textColorSecondary">@android:color/white</item>
+    </style>
+
+
 </resources>

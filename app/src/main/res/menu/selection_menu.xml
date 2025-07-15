@@ -1,0 +1,22 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/selectAll"
+        android:title="Select All"
+        android:icon="@drawable/ic_select_all"
+        app:showAsAction="always|withText"
+        android:checkable="true" />
+
+    <item
+        android:id="@+id/deleteSelected"
+        android:title="Delete"
+        android:icon="@drawable/ic_delete"
+        app:showAsAction="always|withText" />
+
+    <item
+        android:id="@+id/moveSelected"
+        android:title="Move"
+        android:icon="@drawable/ic_move"
+        app:showAsAction="always|withText" />
+</menu>

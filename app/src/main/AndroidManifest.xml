@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+
     <!-- for android 10+ -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" /> <!-- for android 11+ -->
@@ -16,12 +17,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.FileMiner"
         tools:targetApi="31">
-        <activity
-            android:name=".Manageduplicate"
-            android:exported="false" />
-        <!-- <activity -->
-        <!-- android:name=".DeletedFilesActivity" -->
-        <!-- android:exported="false" /> -->
+
         <activity
             android:name=".OtherFilesActivity"
             android:exported="false"
@@ -37,10 +33,12 @@
         </activity>
         <activity
             android:name=".HiddenFilesActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:theme="@style/Theme.A"/>
         <activity
             android:name=".AllDataRecovery"
-            android:exported="false" /> <!-- file scure share to other app -->
+            android:exported="false"
+            android:theme="@style/Theme.A"/>
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="com.example.fileminer.provider"

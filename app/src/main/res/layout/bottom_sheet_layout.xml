@@ -98,5 +98,62 @@
             android:paddingStart="16dp" />
     </RadioGroup>
 
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginVertical="12dp"
+        android:background="#CCCCCC" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Exclude Folders"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp"
+        android:gravity="start" />
+
+
+    <TextView
+        android:id="@+id/multiExcludeFolders"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:drawableEnd="@drawable/ic_dropdown_arrow"
+        android:drawablePadding="8dp"
+        android:padding="12dp"
+        android:background="@drawable/input_background"
+        android:hint="Select folders to exclude"
+        android:textSize="16sp" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginVertical="12dp"
+        android:background="#CCCCCC" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Exclude Extension"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="8dp"
+        android:gravity="start" />
+
+
+    <TextView
+        android:id="@+id/multiExcludeExtensions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Select file extensions to exclude"
+        android:textColor="@color/colorOnBackground"
+        android:padding="12dp"
+        android:background="@drawable/input_background"
+        android:drawableEnd="@drawable/ic_dropdown_arrow"
+        android:drawableTint="@color/colorAccent"
+        android:textSize="16sp" />
+
+
+
 
 </LinearLayout>

@@ -1,8 +1,8 @@
 package com.example.fileminer;
 
 import android.app.Activity;
-import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
@@ -13,76 +13,66 @@ import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatDelegate;
 
 public class PermissionActivity extends Activity {
 
-    private static final int REQUEST_CODE = 2296;
-
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
         super.onCreate(savedInstanceState);
-
-        // Agar permission already mil chuki hai, toh sidha MainActivity2 open karo
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && Environment.isExternalStorageManager()) {
-            openMainActivity();
-            return;
-        }
-
-        // Layout set karo agar permission nahi mili hai
         setContentView(R.layout.activity_permission);
 
-        // TextView ko reference karo
-        TextView permissionText = findViewById(R.id.permissionText);
+        // ====================== Set image based on night mode
+        ImageView imageView = findViewById(R.id.imageView);
+        int currentNightMode = getResources().getConfiguration().uiMode
+                & Configuration.UI_MODE_NIGHT_MASK;
+        if (currentNightMode == Configuration.UI_MODE_NIGHT_YES) {
+            imageView.setImageResource(R.drawable.filetwo); // Dark mode image
+        } else {
+            imageView.setImageResource(R.drawable.filetwo); // Light mode image
+        }
 
-        // Text set karo aur "All Files Access" ko red color do
+        //=================== Set styled text with red highlight
+        TextView permissionText = findViewById(R.id.permissionText);
         String text = "\"All Files Access\" permission is required to search for files.";
         SpannableString spannable = new SpannableString(text);
         spannable.setSpan(new ForegroundColorSpan(Color.RED), 1, 17, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         permissionText.setText(spannable);
 
+        //================= Allow button logic
         Button allowButton = findViewById(R.id.allowButton);
-        allowButton.setOnClickListener(v -> requestStoragePermission());
+        allowButton.setOnClickListener(v -> openPermissionSettings());
     }
 
-    private void requestStoragePermission() {
+    private void openPermissionSettings() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (!Environment.isExternalStorageManager()) {
+            try {
+                Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+                intent.setData(Uri.parse("package:" + getPackageName()));
+                startActivity(intent);
+            } catch (Exception e) {
                 try {
                     Intent intent = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
-                    intent.setData(Uri.parse("package:" + getPackageName()));
-
-                    if (intent.resolveActivity(getPackageManager()) != null) {
-                        startActivityForResult(intent, REQUEST_CODE);
-                    } else {
-                        openMainActivity();
-                    }
-                } catch (ActivityNotFoundException e) {
-                    Toast.makeText(this, "Error: Unable to open settings!", Toast.LENGTH_SHORT).show();
-                    e.printStackTrace();
+                    startActivity(intent);
+                } catch (Exception ex) {
+                    Toast.makeText(this, "Unable to open settings", Toast.LENGTH_SHORT).show();
                 }
-            } else {
-                openMainActivity();
             }
-        } else {
-            openMainActivity();
         }
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_CODE) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                if (Environment.isExternalStorageManager()) {
-                    Toast.makeText(this, "Permission Granted!", Toast.LENGTH_SHORT).show();
-                    openMainActivity();
-                } else {
-                    Toast.makeText(this, "Permission not granted!", Toast.LENGTH_SHORT).show();
-                }
+    protected void onResume() {
+        super.onResume();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (Environment.isExternalStorageManager()) {
+                //Toast.makeText(this, "Permission Granted!", Toast.LENGTH_SHORT).show();
+                openMainActivity();
             }
         }
     }
@@ -91,5 +81,10 @@ public class PermissionActivity extends Activity {
         Intent intent = new Intent(PermissionActivity.this, MainActivity2.class);
         startActivity(intent);
         finish();
+    }
+
+    @Override
+    public void onBackPressed() {
+        Toast.makeText(this, "Please grant permission to proceed.", Toast.LENGTH_SHORT).show();
     }
 }

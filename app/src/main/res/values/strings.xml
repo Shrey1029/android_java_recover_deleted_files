@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">FileMiner</string>
+    <string name="app_name">File Junk Cleaner</string>
     <string-array name="search_options">
         <item>Contains</item>
         <item>Starts with</item>

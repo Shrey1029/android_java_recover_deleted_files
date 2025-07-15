@@ -2,13 +2,18 @@ package com.example.fileminer;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.StatFs;
+import android.preference.PreferenceManager;
+import android.util.Log;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.os.Environment;
 import android.os.Handler;
+
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import android.Manifest;
@@ -22,17 +27,37 @@ public class MainActivity2 extends Activity {
     private TextView usedStorage, freeStorage, progressText;
     private ProgressBar storageProgress;
     private Button btnPhoto, btnVideo, btnAudio, btnDocument, btnRecycle, btnhidden;
-
     private Button btnOtherFiles , manageduplicate;
     private static final int REQUEST_STORAGE_PERMISSION = 100;
     private static final int REQUEST_MANAGE_STORAGE_PERMISSION = 101;
 
+    private int lastProgress = 0; // Track the last progress for restoration
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
+
         super.onCreate(savedInstanceState);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
+            Intent intent = new Intent(this, PermissionActivity.class);
+            startActivity(intent);
+            finish();
+            return;
+        }
+
         setContentView(R.layout.activity_main2);
 
+        Log.d("ThemeTest", "App theme applied: " + AppCompatDelegate.getDefaultNightMode());
+
         initViews();
+
+        if (savedInstanceState != null) {
+            lastProgress = savedInstanceState.getInt("saved_progress", 0);
+            storageProgress.setProgress(lastProgress);
+            progressText.setText(lastProgress + "%");
+        }
+
         if (checkStoragePermission()) {
             displayStorageInfo();
         } else {
@@ -40,6 +65,12 @@ public class MainActivity2 extends Activity {
         }
 
         setupButtonListeners();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt("saved_progress", lastProgress);
     }
 
     private boolean checkStoragePermission() {
@@ -106,7 +137,6 @@ public class MainActivity2 extends Activity {
         btnRecycle = findViewById(R.id.btnRecycle);
         btnhidden = findViewById(R.id.btnHidden);
         btnOtherFiles = findViewById(R.id.btnOtherFiles);
-       // manageduplicate = findViewById(R.id.manageduplicate);
     }
 
     private void displayStorageInfo() {
@@ -131,6 +161,7 @@ public class MainActivity2 extends Activity {
                 while (currentProgress < targetProgress) {
                     currentProgress++;
                     int finalProgress = currentProgress;
+                    lastProgress = finalProgress;
                     handler.post(() -> {
                         storageProgress.setProgress(finalProgress);
                         progressText.setText(finalProgress + "%");
@@ -145,6 +176,7 @@ public class MainActivity2 extends Activity {
                 while (currentProgress > targetProgress) {
                     currentProgress--;
                     int finalProgress = currentProgress;
+                    lastProgress = finalProgress;
                     handler.post(() -> {
                         storageProgress.setProgress(finalProgress);
                         progressText.setText(finalProgress + "%");
@@ -171,7 +203,6 @@ public class MainActivity2 extends Activity {
         btnRecycle.setOnClickListener(v -> navigateToRecycleBin());
         btnhidden.setOnClickListener(v -> navigateToHiddenFiles());
         btnOtherFiles.setOnClickListener(v -> navigateotherdata());
-      //  manageduplicate.setOnClickListener(v -> navigateduplicate());
     }
 
     private void navigateToCategory(String category) {
@@ -194,10 +225,7 @@ public class MainActivity2 extends Activity {
         Intent intent = new Intent(MainActivity2.this, OtherFilesActivity.class);
         startActivity(intent);
     }
-//    private void navigateduplicate(){
-//        Intent intent = new Intent(MainActivity2.this, Manageduplicate.class);
-//        startActivity(intent);
-//    }
+
     private void showToast(String message) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
