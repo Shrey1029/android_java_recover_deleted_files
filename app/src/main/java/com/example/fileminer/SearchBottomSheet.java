@@ -1,9 +1,14 @@
+// Updated: Caches fileType-specific folders and extensions separately
 package com.example.fileminer;
 
 import android.app.Dialog;
 import android.content.Context;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
+import android.text.TextUtils;
 import android.widget.RadioGroup;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -11,21 +16,44 @@ import androidx.annotation.Nullable;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 public class SearchBottomSheet extends BottomSheetDialogFragment {
 
     private Context context;
-    private String selectedSearchType; // Will be passed from MainActivity
-    private boolean isCaseSensitive; // To track case sensitivity
+    private String selectedSearchType;
+    private boolean isCaseSensitive;
+    private String fileType;
     private OnSearchOptionSelectedListener searchOptionListener;
 
+    private List<String> allFolders = new ArrayList<>();
+    private List<String> excludedFolders = new ArrayList<>();
+
+    private List<String> allExtensions = new ArrayList<>();
+    private List<String> excludedExtensions = new ArrayList<>();
+
+    private TextView excludeFoldersTextView;
+    private TextView excludeExtensionsTextView;
+
     public interface OnSearchOptionSelectedListener {
-        void onSearchOptionSelected(String searchType, boolean isCaseSensitive);
+        void onSearchOptionSelected(String searchType, boolean isCaseSensitive,
+                                    List<String> excludedFolders, List<String> excludedExtensions);
     }
 
-    public SearchBottomSheet(Context context, String selectedSearchType, boolean isCaseSensitive, OnSearchOptionSelectedListener listener) {
+    public SearchBottomSheet(Context context, String selectedSearchType, boolean isCaseSensitive,
+                             List<String> excludedFolders, List<String> excludedExtensions,
+                             String fileType,
+                             OnSearchOptionSelectedListener listener) {
         this.context = context;
         this.selectedSearchType = selectedSearchType;
         this.isCaseSensitive = isCaseSensitive;
+        this.excludedFolders = new ArrayList<>(excludedFolders);
+        this.excludedExtensions = new ArrayList<>(excludedExtensions);
+        this.fileType = fileType;
         this.searchOptionListener = listener;
     }
 
@@ -37,65 +65,257 @@ public class SearchBottomSheet extends BottomSheetDialogFragment {
 
         RadioGroup searchTypeRadioGroup = dialog.findViewById(R.id.radioGroup);
         RadioGroup caseSensitiveRadioGroup = dialog.findViewById(R.id.radioGroupCase);
+        excludeFoldersTextView = dialog.findViewById(R.id.multiExcludeFolders);
+        excludeExtensionsTextView = dialog.findViewById(R.id.multiExcludeExtensions);
+
+        excludeFoldersTextView.setEnabled(false);
+        excludeExtensionsTextView.setEnabled(false);
+        excludeFoldersTextView.setText("Loading folders...");
+        excludeExtensionsTextView.setText("Loading extensions...");
+
+        if (!SearchCache.folderMap.containsKey(fileType)) {
+            new LoadFoldersTask().execute();
+        } else {
+            allFolders.clear();
+            allFolders.addAll(SearchCache.folderMap.get(fileType));
+            excludeFoldersTextView.setEnabled(true);
+            updateExcludeTextView(excludeFoldersTextView);
+        }
+
+        if (!SearchCache.extensionMap.containsKey(fileType)) {
+            new LoadExtensionsTask().execute();
+        } else {
+            allExtensions.clear();
+            allExtensions.addAll(SearchCache.extensionMap.get(fileType));
+            excludeExtensionsTextView.setEnabled(true);
+            updateExcludeExtensionsTextView(excludeExtensionsTextView);
+        }
+
+        excludeFoldersTextView.setOnClickListener(v -> showFolderSelectionDialog());
+        excludeExtensionsTextView.setOnClickListener(v -> showExtensionSelectionDialog());
+
+        searchTypeRadioGroup.setOnCheckedChangeListener((group, checkedId) -> {
+            if (checkedId == R.id.radioContains) {
+                selectedSearchType = "Contains";
+            } else if (checkedId == R.id.radioStartsWith) {
+                selectedSearchType = "Starts With";
+            } else if (checkedId == R.id.radioEndsWith) {
+                selectedSearchType = "Ends With";
+            } else if (checkedId == R.id.radioPath) {
+                selectedSearchType = "Path";
+            }
+            notifyListener();
+        });
+
+        caseSensitiveRadioGroup.setOnCheckedChangeListener((group, checkedId) -> {
+            isCaseSensitive = (checkedId == R.id.radioCaseSensitive);
+            notifyListener();
+        });
 
         setInitialRadioButtonState(searchTypeRadioGroup);
         setInitialCaseSensitiveState(caseSensitiveRadioGroup);
 
-        searchTypeRadioGroup.setOnCheckedChangeListener((group, checkedId) -> {
-            String newSelectedSearchType = "";
-
-            if (checkedId == R.id.radioContains) {
-                newSelectedSearchType = "Contains";
-            } else if (checkedId == R.id.radioStartsWith) {
-                newSelectedSearchType = "Starts With";
-            } else if (checkedId == R.id.radioEndsWith) {
-                newSelectedSearchType = "Ends With";
-            } else if (checkedId == R.id.radioPath) { // <<<< NEW OPTION
-                newSelectedSearchType = "Path";
-            }
-
-            if (!newSelectedSearchType.equals(selectedSearchType)) {
-                selectedSearchType = newSelectedSearchType;
-
-                if (searchOptionListener != null) {
-                    searchOptionListener.onSearchOptionSelected(selectedSearchType, isCaseSensitive);
-                }
-            }
-        });
-
-        caseSensitiveRadioGroup.setOnCheckedChangeListener((group, checkedId) -> {
-            if (checkedId == R.id.radioCaseSensitive) {
-                isCaseSensitive = true;
-            } else if (checkedId == R.id.radioCaseInsensitive) {
-                isCaseSensitive = false;
-            }
-
-            if (searchOptionListener != null) {
-                searchOptionListener.onSearchOptionSelected(selectedSearchType, isCaseSensitive);
-            }
-        });
-
         return dialog;
     }
 
+    private class LoadFoldersTask extends AsyncTask<Void, Void, List<String>> {
+        @Override
+        protected List<String> doInBackground(Void... voids) {
+            Set<String> folderNames = new HashSet<>();
+            getFolderNamesRecursively(Environment.getExternalStorageDirectory(), folderNames);
+            return new ArrayList<>(folderNames);
+        }
+
+        @Override
+        protected void onPostExecute(List<String> result) {
+            SearchCache.folderMap.put(fileType, result);
+            allFolders.clear();
+            allFolders.addAll(result);
+            excludeFoldersTextView.setEnabled(true);
+            updateExcludeTextView(excludeFoldersTextView);
+        }
+    }
+
+    private class LoadExtensionsTask extends AsyncTask<Void, Void, List<String>> {
+        @Override
+        protected List<String> doInBackground(Void... voids) {
+            Set<String> extensions = new HashSet<>();
+            getExtensionsRecursively(Environment.getExternalStorageDirectory(), extensions);
+            return new ArrayList<>(extensions);
+        }
+
+        @Override
+        protected void onPostExecute(List<String> result) {
+            SearchCache.extensionMap.put(fileType, result);
+            allExtensions.clear();
+            allExtensions.addAll(result);
+            excludeExtensionsTextView.setEnabled(true);
+            updateExcludeExtensionsTextView(excludeExtensionsTextView);
+        }
+    }
+
+    private boolean isDeletedFile(File file) {
+        File parentDir = file.getParentFile();
+        return parentDir != null && isTrashFolder(parentDir) || file.getName().startsWith(".trashed-");
+    }
+
+    private boolean isTrashFolder(File file) {
+        String name = file.getName().toLowerCase();
+        return name.startsWith(".trashed-") || name.startsWith(".trashed") ||
+                name.equals(".recycle") || name.equals(".trash") || name.equals("_.trashed");
+    }
+
+    private boolean isHiddenFile(File file) {
+        return file.getParentFile() != null && file.getParentFile().getName().startsWith(".");
+    }
+
+    private void getFolderNamesRecursively(File dir, Set<String> folderNames) {
+        if (dir == null || !dir.isDirectory()) return;
+        File[] files = dir.listFiles();
+        if (files == null) return;
+
+        boolean hasMatchingFile = false;
+
+        for (File file : files) {
+            if (file.isDirectory()) {
+                getFolderNamesRecursively(file, folderNames);
+            } else {
+                String name = file.getName();
+                int dotIndex = name.lastIndexOf('.');
+                if (dotIndex != -1) {
+                    String ext = name.substring(dotIndex).toLowerCase();
+                    boolean match = isExtensionMatchingType(ext);
+                    if ((fileType.equals("Deleted") && isDeletedFile(file)) ||
+                            (fileType.equals("Hidden") && isHiddenFile(file)) ||
+                            (!fileType.equals("Deleted") && !fileType.equals("Hidden") && match)) {
+                        hasMatchingFile = true;
+                    }
+                }
+            }
+        }
+
+        if (hasMatchingFile) {
+            folderNames.add(dir.getName());
+        }
+    }
+
+    private void getExtensionsRecursively(File dir, Set<String> extensions) {
+        if (dir == null || !dir.isDirectory()) return;
+        File[] files = dir.listFiles();
+        if (files == null) return;
+
+        for (File file : files) {
+            if (file.isDirectory()) {
+                getExtensionsRecursively(file, extensions);
+            } else {
+                String name = file.getName();
+                int dotIndex = name.lastIndexOf('.');
+                if (dotIndex != -1 && dotIndex < name.length() - 1) {
+                    String ext = name.substring(dotIndex).toLowerCase();
+                    if ((fileType.equals("Deleted") && isDeletedFile(file)) ||
+                            (fileType.equals("Hidden") && isHiddenFile(file)) ||
+                            (!fileType.equals("Deleted") && !fileType.equals("Hidden") && isExtensionMatchingType(ext))) {
+                        extensions.add(ext);
+                    }
+                }
+            }
+        }
+    }
+
+    private boolean isExtensionMatchingType(String ext) {
+        if (fileType == null || fileType.equals("All")) return true;
+        switch (fileType) {
+            case "Photo":
+                return ext.matches("\\.(jpg|jpeg|png|gif|webp|bmp|heic)");
+            case "Video":
+                return ext.matches("\\.(mp4|mkv|avi|3gp|webm|mov)");
+            case "Audio":
+                return ext.matches("\\.(mp3|wav|m4a|aac|ogg|flac)");
+            case "Document":
+                return ext.matches("\\.(pdf|doc|docx|xls|xlsx|ppt|pptx|txt)");
+            default:
+                return true;
+        }
+    }
+private void showFolderSelectionDialog() {
+        boolean[] checkedItems = new boolean[allFolders.size()];
+        for (int i = 0; i < allFolders.size(); i++) {
+            checkedItems[i] = excludedFolders.contains(allFolders.get(i));
+        }
+
+        new androidx.appcompat.app.AlertDialog.Builder(context)
+                .setTitle("Select Folders to Exclude")
+                .setMultiChoiceItems(allFolders.toArray(new String[0]), checkedItems, (dialog, which, isChecked) -> {
+                    String folder = allFolders.get(which);
+                    if (isChecked && !excludedFolders.contains(folder)) {
+                        excludedFolders.add(folder);
+                    } else {
+                        excludedFolders.remove(folder);
+                    }
+                })
+                .setPositiveButton("OK", (dialog, which) -> {
+                    updateExcludeTextView(excludeFoldersTextView);
+                    notifyListener();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void showExtensionSelectionDialog() {
+        boolean[] checkedItems = new boolean[allExtensions.size()];
+        for (int i = 0; i < allExtensions.size(); i++) {
+            checkedItems[i] = excludedExtensions.contains(allExtensions.get(i));
+        }
+
+        new androidx.appcompat.app.AlertDialog.Builder(context)
+                .setTitle("Select Extensions to Exclude")
+                .setMultiChoiceItems(allExtensions.toArray(new String[0]), checkedItems, (dialog, which, isChecked) -> {
+                    String ext = allExtensions.get(which);
+                    if (isChecked && !excludedExtensions.contains(ext)) {
+                        excludedExtensions.add(ext);
+                    } else {
+                        excludedExtensions.remove(ext);
+                    }
+                })
+                .setPositiveButton("OK", (dialog, which) -> {
+                    updateExcludeExtensionsTextView(excludeExtensionsTextView);
+                    notifyListener();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void updateExcludeTextView(TextView view) {
+        view.setText(excludedFolders.isEmpty() ? "Select folders to exclude" : TextUtils.join(", ", excludedFolders));
+    }
+
+    private void updateExcludeExtensionsTextView(TextView view) {
+        view.setText(excludedExtensions.isEmpty() ? "Select file extensions to exclude" : TextUtils.join(", ", excludedExtensions));
+    }
+
+    private void notifyListener() {
+        if (searchOptionListener != null) {
+            searchOptionListener.onSearchOptionSelected(selectedSearchType, isCaseSensitive, excludedFolders, excludedExtensions);
+        }
+    }
+
     private void setInitialRadioButtonState(RadioGroup radioGroup) {
-        if (selectedSearchType.equals("Starts With")) {
-            radioGroup.check(R.id.radioStartsWith);
-        } else if (selectedSearchType.equals("Ends With")) {
-            radioGroup.check(R.id.radioEndsWith);
-        } else if (selectedSearchType.equals("Path")) {
-            radioGroup.check(R.id.radioPath); // <<<< NEW
-        } else {
-            radioGroup.check(R.id.radioContains); // Default
+        switch (selectedSearchType) {
+            case "Starts With":
+                radioGroup.check(R.id.radioStartsWith);
+                break;
+            case "Ends With":
+                radioGroup.check(R.id.radioEndsWith);
+                break;
+            case "Path":
+                radioGroup.check(R.id.radioPath);
+                break;
+            default:
+                radioGroup.check(R.id.radioContains);
         }
     }
 
     private void setInitialCaseSensitiveState(RadioGroup caseSensitiveGroup) {
-        if (isCaseSensitive) {
-            caseSensitiveGroup.check(R.id.radioCaseSensitive);
-        } else {
-            caseSensitiveGroup.check(R.id.radioCaseInsensitive);
-        }
+        caseSensitiveGroup.check(isCaseSensitive ? R.id.radioCaseSensitive : R.id.radioCaseInsensitive);
     }
 }
-

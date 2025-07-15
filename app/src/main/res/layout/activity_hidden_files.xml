@@ -6,7 +6,19 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".HiddenFilesActivity"
+    android:background="@color/colorSurface"
     android:orientation="vertical">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/selectionToolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="#FFFFFF"
+        android:visibility="gone"
+        android:elevation="4dp"
+        android:theme="@style/ToolbarWhiteText"
+        android:textColor="@color/black"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
 
     <GridView
         android:id="@+id/hiddenFilesGridView"
@@ -15,7 +27,37 @@
         android:numColumns="3"
         android:verticalSpacing="8dp"
         android:horizontalSpacing="8dp"
-        android:padding="8dp" />
+        android:stretchMode="columnWidth"
+        android:gravity="center" />
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_centerInParent="true"
+        android:visibility="gone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        />
+
+    <!-- Bulk Delete Button -->
+    <Button
+        android:id="@+id/btnDeleteSelected"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Delete Selected Files"
+        android:visibility="gone" />
+    <TextView
+        android:id="@+id/noResultsText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="No files found with this name!"
+        android:textSize="16sp"
+        android:gravity="center"
+        android:visibility="gone"
+        android:padding="16dp" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 
 
 </LinearLayout>

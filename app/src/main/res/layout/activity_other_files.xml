@@ -1,40 +1,69 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".OtherFilesActivity">
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
+    tools:context=".OtherFilesActivity"
+    android:orientation="vertical"
+    android:background="@color/colorSurface"
+    >
+
+    <!-- Selection Toolbar -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/selectionToolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="#FFFFFF"
         android:visibility="gone"
-        android:indeterminate="true" />
+        android:elevation="4dp"
+        android:theme="@style/ToolbarWhiteText"
+        android:textColor="@color/black"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
+    <!-- FrameLayout for overlapping views -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <!-- GridView -->
+        <GridView
+            android:id="@+id/gridOtherFiles"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:numColumns="3"
+            android:verticalSpacing="8dp"
+            android:horizontalSpacing="8dp"
+            android:stretchMode="columnWidth"
+            android:gravity="center" />
+
+        <!-- Centered ProgressBar -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone" />
+
+        <!-- "No results" message -->
+        <TextView
+            android:id="@+id/noResultsText"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:text="No files found with this name!"
+            android:textSize="16sp"
+            android:gravity="center"
+            android:visibility="gone"
+            android:padding="16dp" />
+    </FrameLayout>
+
+    <!-- Action Button ( Delete Selected) -->
     <Button
         android:id="@+id/btnDeleteSelected"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Delete Selected Files"
         android:visibility="gone" />
-    <TextView
-        android:id="@+id/noResultsText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="No files found with this name!"
-        android:textSize="16sp"
-        android:gravity="center"
-        android:visibility="gone"
-        android:padding="16dp" />
-    <GridView
-        android:id="@+id/gridOtherFiles"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:numColumns="3"
-        android:verticalSpacing="8dp"
-        android:horizontalSpacing="8dp"
-        android:stretchMode="columnWidth"
-        android:gravity="center" />
-</RelativeLayout>
+
+</LinearLayout>

@@ -8,13 +8,16 @@
     tools:context=".PermissionActivity"
     android:orientation="vertical"
     android:gravity="center"
-    android:padding="20dp">
+    android:padding="20dp"
+    android:background="@color/colorSurface"
+    >
 
     <ImageView
+        android:id="@+id/imageView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/fileone"
-        android:layout_marginBottom="30dp"/>
+        android:src="@drawable/filetwo"
+        android:layout_marginBottom="30dp" />
 
     <TextView
         android:layout_width="wrap_content"
@@ -29,7 +32,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="16sp"
-        android:textColor="@android:color/darker_gray"
+        android:textColor="@color/colorOnPrimary"
         android:layout_marginTop="15dp"/>
 
     <Button
@@ -38,7 +41,7 @@
         android:layout_height="50dp"
         android:background="@drawable/rounded_button"
         android:text="Allow"
-        android:textColor="@android:color/white"
+        android:textColor="@color/colorOnPrimary"
         android:textStyle="bold"
         android:layout_marginTop="20dp"/>
 

@@ -1,0 +1,19 @@
+<!-- res/values/styles.xml -->
+<resources>
+<!--    <style name="Theme.A" parent="Theme.AppCompat.DayNight.DarkActionBar">-->
+<!--        <item name="colorPrimary">#000000</item>-->
+<!--        <item name="colorPrimaryDark">#121212</item>-->
+<!--        <item name="colorAccent">#4CAF50</item>-->
+<!--        <item name="android:windowBackground">#000000</item>-->
+<!--        <item name="android:statusBarColor">#000000</item>-->
+<!--        <item name="android:windowLightStatusBar">false</item>-->
+<!--    </style>-->
+
+<!--    &lt;!&ndash;    top bar &ndash;&gt;-->
+<!--    <style name="ToolbarWhiteText" parent="ThemeOverlay.AppCompat.Dark.ActionBar">-->
+<!--        <item name="android:textColorPrimary">@android:color/white</item>-->
+<!--        <item name="android:textColorSecondary">@android:color/white</item>-->
+<!--    </style>-->
+
+
+</resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <color name="colorSurface">#121212</color> <!-- or any dark background color -->
+    <color name="colorOnPrimary">#F4EEEE</color>
+</resources>

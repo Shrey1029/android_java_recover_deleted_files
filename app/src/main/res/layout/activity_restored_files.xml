@@ -1,19 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".RestoredFilesActivity">
+    android:orientation="vertical"
+    tools:context=".RestoredFilesActivity"
+    android:background="@color/colorSurface"
+    >
 
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_centerInParent="true"
+    <!-- Selection Toolbar -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/selectionToolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="#FFFFFF"
         android:visibility="gone"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        />
+        android:elevation="4dp"
+        android:theme="@style/ToolbarWhiteText"
+        android:textColor="@color/black"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
+    <!-- FrameLayout to stack GridView, ProgressBar, No Results -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <!-- GridView for displaying files -->
+        <GridView
+            android:id="@+id/gridView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:numColumns="3"
+            android:verticalSpacing="8dp"
+            android:horizontalSpacing="8dp"
+            android:stretchMode="columnWidth"
+            android:gravity="center" />
+
+        <!-- Centered ProgressBar -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:visibility="gone" />
+
+        <!-- No Results Text -->
+        <TextView
+            android:id="@+id/noResultsText"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:text="No files found with this name!"
+            android:textSize="16sp"
+            android:gravity="center"
+            android:padding="16dp"
+            android:visibility="gone" />
+    </FrameLayout>
 
     <!-- Bulk Delete Button -->
     <Button
@@ -22,33 +65,12 @@
         android:layout_height="wrap_content"
         android:text="Delete Selected Files"
         android:visibility="gone" />
-    <TextView
-        android:id="@+id/noResultsText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="No files found with this name!"
-        android:textSize="16sp"
-        android:gravity="center"
-        android:visibility="gone"
-        android:padding="16dp" />
 
-
-
-    <!-- GridView for displaying files -->
-    <GridView
-        android:id="@+id/gridView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:numColumns="3"
-        android:verticalSpacing="8dp"
-        android:horizontalSpacing="8dp"
-        android:stretchMode="columnWidth"
-        android:gravity="center"
-        />
-    <!-- activity_restored_files.xml -->
+    <!-- RecyclerView (if used as alternate to GridView) -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
-</RelativeLayout>
+        android:layout_height="0dp"
+        android:layout_weight="0"
+        android:visibility="gone" />
+</LinearLayout>

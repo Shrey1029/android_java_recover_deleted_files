@@ -1,4 +1,12 @@
+<!--<selector xmlns:android="http://schemas.android.com/apk/res/android">-->
+<!--    <item android:drawable="@color/black" android:state_pressed="true"/>-->
+<!--    <item android:drawable="@color/black"/>-->
+<!--</selector>-->
+
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@color/black" android:state_pressed="true"/>
-    <item android:drawable="@color/black"/>
+    <!-- Pressed state -->
+    <item android:drawable="@color/colorPrimaryVariant" android:state_pressed="true"/> <!-- Deep Green -->
+
+    <!-- Default state -->
+    <item android:drawable="@color/colorPrimary"/> <!-- Neon Tech Green -->
 </selector>
