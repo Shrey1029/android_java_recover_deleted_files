@@ -47,7 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class AllDataRecovery extends AppCompatActivity {
+public class AllDataRecovery extends AppCompatActivity implements ToolbarUpdateListener, FileDeleteListener{
 
     GridView listView;
     ProgressBar progressBar;
@@ -56,14 +56,14 @@ public class AllDataRecovery extends AppCompatActivity {
     private static final int MAX_FILES = 500;
 
     //--------------
-    private MediaAdapterDeletd adapter;
-    private ArrayList<MediaItemDeleted> restoredFiles = new ArrayList<>();
-    private List<MediaItemDeleted> fullMediaItemList = new ArrayList<>();
+    private MediaAdapter adapter;
+    private ArrayList<MediaItem> restoredFiles = new ArrayList<>();
+    private List<MediaItem> fullMediaItemList = new ArrayList<>();
 
     private String currentSort = "time";
     private boolean isAscending = false;
 
-    private ArrayList<MediaItemDeleted> selectedFiles;
+    private ArrayList<MediaItem> selectedFiles;
 
     private String selectedSearchType = "Contains";
     private List<String> fileList = new ArrayList<>();
@@ -73,8 +73,8 @@ public class AllDataRecovery extends AppCompatActivity {
     private List<String> excludedFolders = new ArrayList<>();
     private List<String> excludedExtensions = new ArrayList<>();
     private boolean isShowingDuplicates = false;
-    private List<MediaItemDeleted> duplicateList = new ArrayList<>();
-    private List<MediaItemDeleted> currentFilteredBaseList = new ArrayList<>();
+    private List<MediaItem> duplicateList = new ArrayList<>();
+    private List<MediaItem> currentFilteredBaseList = new ArrayList<>();
 
 
     private String currentQuery = "";
@@ -82,7 +82,6 @@ public class AllDataRecovery extends AppCompatActivity {
     Toolbar selectionToolbar;
 
     String fileType = "Deleted";
-
 
 
     @Override
@@ -105,7 +104,7 @@ public class AllDataRecovery extends AppCompatActivity {
         selectedFiles = new ArrayList<>();
         fullMediaItemList = new ArrayList<>();
 
-         // ------ toolbar below app bar
+        // ------ toolbar below app bar
         selectionToolbar = findViewById(R.id.selectionToolbar);
         selectionToolbar.inflateMenu(R.menu.selection_menu);
         selectionToolbar.setTitleTextColor(getResources().getColor(android.R.color.black));
@@ -138,7 +137,6 @@ public class AllDataRecovery extends AppCompatActivity {
 
             return false;
         });
-
 
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -214,13 +212,13 @@ public class AllDataRecovery extends AppCompatActivity {
                 fullMediaItemList.clear();
 
                 for (File file : deletedFiles) {
-                    MediaItemDeleted item = new MediaItemDeleted(file.getName(), file.getAbsolutePath());
+                    MediaItem item = new MediaItem(file.getName(), file.getAbsolutePath());
                     restoredFiles.add(item);
                     fullMediaItemList.add(item);
                 }
 
                 sortFiles(); // sort after scan
-                adapter = new MediaAdapterDeletd(this, restoredFiles);
+                adapter = new MediaAdapter(this, restoredFiles, AllDataRecovery.this , this);
                 listView.setAdapter(adapter);
             });
 
@@ -228,7 +226,8 @@ public class AllDataRecovery extends AppCompatActivity {
     }
 
     private void searchTrashedFiles(File dir, int depth, Set<String> seenPaths) {
-        if (dir == null || !dir.exists() || !dir.isDirectory() || depth > 10 || deletedFiles.size() >= MAX_FILES) return;
+        if (dir == null || !dir.exists() || !dir.isDirectory() || depth > 10 || deletedFiles.size() >= MAX_FILES)
+            return;
 
         File[] files = dir.listFiles();
         if (files == null) return;
@@ -248,7 +247,7 @@ public class AllDataRecovery extends AppCompatActivity {
 
     private boolean isTrashFolder(File file) {
         String name = file.getName().toLowerCase();
-        return name.startsWith(".trashed-")||name.startsWith(".trashed") || name.equals(".recycle") || name.equals(".trash")||name.equals("_.trashed");
+        return name.startsWith(".trashed-") || name.startsWith(".trashed") || name.equals(".recycle") || name.equals(".trash") || name.equals("_.trashed");
 
     }
 
@@ -257,7 +256,7 @@ public class AllDataRecovery extends AppCompatActivity {
         return parentDir != null && isTrashFolder(parentDir) || file.getName().startsWith(".trashed-");
     }
 
-        private void openFile(File file) {
+    private void openFile(File file) {
         try {
             Uri uri = Uri.fromFile(file);
             Intent intent = new Intent(Intent.ACTION_VIEW);
@@ -280,19 +279,11 @@ public class AllDataRecovery extends AppCompatActivity {
             Toast.makeText(this, "No supported app found to open this file!", Toast.LENGTH_SHORT).show();
             e.printStackTrace();
         }
- }
+    }
 
-    //--------------------------------------
+    //===============================Featurs Call===========================
     public void updateSelectionToolbar() {
-        boolean anySelected = false;
-        for (MediaItemDeleted item : restoredFiles) {
-            if (item.isSelected()) {
-                anySelected = true;
-                break;
-            }
-        }
-
-        selectionToolbar.setVisibility(anySelected ? View.VISIBLE : View.GONE);
+        AllFeaturesUtils.updateSelectionToolbar(restoredFiles, selectionToolbar);
     }
 
     @Override
@@ -320,7 +311,7 @@ public class AllDataRecovery extends AppCompatActivity {
             sortFiles();
             adapter.notifyDataSetChanged();
             return true;
-        }  else if (id == R.id.hideDuplicates) {
+        } else if (id == R.id.hideDuplicates) {
             hideDuplicates();
             return true;
         } else if (id == R.id.showOnlyDuplicates) {
@@ -331,8 +322,7 @@ public class AllDataRecovery extends AppCompatActivity {
             item.setChecked(showPath);
             adapter.setShowPath(showPath);
             return true;
-        }
-        else if (id == R.id.action_filter) {
+        } else if (id == R.id.action_filter) {
             loadFileList(); // Reload original file list
 
             SearchBottomSheet bottomSheet = new SearchBottomSheet(
@@ -364,151 +354,75 @@ public class AllDataRecovery extends AppCompatActivity {
 
         return super.onOptionsItemSelected(item);
     }
+
     private void sortFiles() {
-        if ("name".equals(currentSort)) {
-            Collections.sort(restoredFiles, (a, b) -> isAscending ?
-                    a.name.compareToIgnoreCase(b.name) :
-                    b.name.compareToIgnoreCase(a.name));
-        } else if ("size".equals(currentSort)) {
-            Collections.sort(restoredFiles, (a, b) -> {
-                if (a.size == 0 && b.size == 0) return 0;
-                else if (a.size == 0) return isAscending ? 1 : -1;
-                else if (b.size == 0) return isAscending ? -1 : 1;
-                return isAscending ? Long.compare(a.size, b.size) : Long.compare(b.size, a.size);
-            });
-        } else if ("time".equals(currentSort)) {
-            Collections.sort(restoredFiles, (a, b) ->
-                    isAscending ? Long.compare(a.dateModified, b.dateModified) : Long.compare(b.dateModified, a.dateModified));
-        }
+        AllFeaturesUtils.sortFiles(restoredFiles, currentSort, isAscending);
+
     }
-
-
 
     private void filterFiles(String query, List<String> excludedFolders, List<String> excludedExtensions) {
-        if (query == null) query = "";
-        String searchQuery = query.trim();
-        List<MediaItemDeleted> filteredList = new ArrayList<>();
-
-        List<MediaItemDeleted> baseList = new ArrayList<>(currentFilteredBaseList);
-
-        if (!isCaseSensitive) {
-            searchQuery = searchQuery.toLowerCase();
+        List<MediaItem> baseList;
+        if (currentFilteredBaseList != null && !currentFilteredBaseList.isEmpty()) {
+            baseList = new ArrayList<>(currentFilteredBaseList);
+        } else if (isShowingDuplicates) {
+            baseList = new ArrayList<>(duplicateList);
+        } else {
+            baseList = new ArrayList<>(fullMediaItemList);
         }
 
-        for (MediaItemDeleted item : baseList) {
-            if (item == null || item.name == null) continue;
+        AllFeaturesUtils.filterFiles(
+                query,
+                excludedFolders,
+                excludedExtensions,
+                baseList,
+                restoredFiles,
+                isCaseSensitive,
+                selectedSearchType,
+                noResultsText,
+                listView,
+                adapter,
+                this::sortFiles
+        );
 
-            File file = new File(item.path);
-            if (!file.exists()) continue;
-
-            String fileName = item.name;
-            String filePath = item.path;
-            String extension = fileName.contains(".") ? fileName.substring(fileName.lastIndexOf(".")) : "";
-
-            if (!isCaseSensitive) {
-                fileName = fileName.toLowerCase();
-                if (filePath != null) filePath = filePath.toLowerCase();
-                extension = extension.toLowerCase();
-            }
-
-            if (shouldExclude(item, excludedFolders)) continue;
-            if (excludedExtensions.contains(extension)) continue;
-
-            if (searchQuery.isEmpty()) {
-                filteredList.add(item);
-            } else {
-                switch (selectedSearchType) {
-                    case "Starts With":
-                        if (fileName.startsWith(searchQuery)) filteredList.add(item);
-                        break;
-                    case "Ends With":
-                        if (fileName.endsWith(searchQuery)) filteredList.add(item);
-                        break;
-                    case "Path":
-                        if (filePath != null && filePath.contains(searchQuery)) filteredList.add(item);
-                        break;
-                    case "Contains":
-                    default:
-                        if (fileName.contains(searchQuery)) filteredList.add(item);
-                        break;
-                }
-            }
-        }
-
-        restoredFiles.clear();
-        restoredFiles.addAll(filteredList);
-        sortFiles();
-
-        runOnUiThread(() -> {
-            if (restoredFiles.isEmpty()) {
-                noResultsText.setVisibility(View.VISIBLE);
-                listView.setVisibility(View.GONE);
-            } else {
-                noResultsText.setVisibility(View.GONE);
-                listView.setVisibility(View.VISIBLE);
-            }
-
-            if (adapter != null) {
-                adapter.notifyDataSetChanged();
-            }
-        });
-    }
-    private boolean shouldExclude(MediaItemDeleted item, List<String> excludedFolders) {
-        if (excludedFolders == null || excludedFolders.isEmpty()) return false;
-
-        File file = new File(item.path);
-        File parentFolder = file.getParentFile();
-        if (parentFolder != null) {
-            String folderName = parentFolder.getName();
-            for (String exclude : excludedFolders) {
-                if (folderName.equalsIgnoreCase(exclude)) {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     private void loadFileList() {
-        fileList.clear();
-        for (MediaItemDeleted item : restoredFiles) {
-            fileList.add(item.name);
-        }
+        AllFeaturesUtils.loadFileList(restoredFiles, fileList);
     }
 
-    public void deleteFile(MediaItemDeleted item) {
-        new AlertDialog.Builder(this)
-                .setTitle("Delete File")
-                .setMessage("Are you sure you want to *permanently* delete this file?")
-                .setPositiveButton("Yes, Delete", (dialog, which) -> {
-                    File file = new File(item.path);
-                    if (file.exists() && file.delete()) {
-                        restoredFiles.removeIf(mediaItem -> mediaItem.path.equals(item.path));
-                        fullMediaItemList.removeIf(mediaItem -> mediaItem.path.equals(item.path));
 
-                        // Update UI
-                        adapter.notifyDataSetChanged();
-                        Toast.makeText(this, "File permanently deleted", Toast.LENGTH_SHORT).show();
-                    } else {
-                        Toast.makeText(this, "Failed to delete file", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .setNegativeButton("No", null)
-                .show();
-    }
+    //-----------permanently Files Delete
+    public void deleteFile(MediaItem item) {
+      new AlertDialog.Builder(this)
+            .setTitle("Delete File")
+            .setMessage("Are you sure you want to *permanently* delete this file?")
+            .setPositiveButton("Yes, Delete", (dialog, which) -> {
+                File file = new File(item.path);
+                if (file.exists() && file.delete()) {
+                    restoredFiles.removeIf(mediaItem -> mediaItem.path.equals(item.path));
+                    fullMediaItemList.removeIf(mediaItem -> mediaItem.path.equals(item.path));
 
-    // Delete all selected files (Select All + Delete)
-    private void deleteSelectedFiles() {
+                    // Update UI
+                    adapter.notifyDataSetChanged();
+                    Toast.makeText(this, "File permanently deleted", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, "Failed to delete file", Toast.LENGTH_SHORT).show();
+                }
+            })
+            .setNegativeButton("No", null)
+            .show();
+      }
+     private void deleteSelectedFiles() {
         // Show confirmation dialog first
         new AlertDialog.Builder(this)
                 .setTitle("Delete Selected Files")
                 .setMessage("Are you sure you want to permanently delete the selected files?")
                 .setPositiveButton("Yes, Delete", (dialog, which) -> {
 
-                    ArrayList<MediaItemDeleted> itemsToDelete = new ArrayList<>();
+                    ArrayList<MediaItem> itemsToDelete = new ArrayList<>();
 
-                    for (MediaItemDeleted item : restoredFiles) {
-                        if (item.isSelected) {
+                    for (MediaItem item : restoredFiles) {
+                        if (item.isSelected()) {
                             File file = new File(item.path);
                             if (file.exists() && file.delete()) {
                                 itemsToDelete.add(item);
@@ -533,337 +447,54 @@ public class AllDataRecovery extends AppCompatActivity {
     }
 
 
-
-    //Select All or Deselect All
+    // ============= Select All or Deselect All
     private void selectAllFiles(boolean select) {
-        for (MediaItemDeleted item : fullMediaItemList) {
-            item.setSelected(select);
-        }
+        AllFeaturesUtils.selectAllFiles(fullMediaItemList, select);
         updateSelectionToolbar();
     }
+
+
     private void moveSelectedFiles() {
-        // Step 1: Get selected files
-        List<MediaItemDeleted> selectedItems = new ArrayList<>();
-        for (MediaItemDeleted item : fullMediaItemList) {
-            if (item.isSelected()) {
-                selectedItems.add(item);
-            }
-        }
-
-        if (selectedItems.isEmpty()) {
-            Toast.makeText(this, "No files selected to move", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // Step 2: Start folder picker from root (internal storage)
-        File rootDir = Environment.getExternalStorageDirectory();  // Show all folders
-        openFolderPicker(rootDir, selectedItems);
-    }
-
-    private void openFolderPicker(File currentDir, List<MediaItemDeleted> selectedItems) {
-        File[] subFoldersArr = currentDir.listFiles(File::isDirectory);
-        if (subFoldersArr == null) subFoldersArr = new File[0];
-
-        final File[] subFolders = subFoldersArr;
-
-        List<String> options = new ArrayList<>();
-        for (File folder : subFolders) {
-            options.add(folder.getName());
-        }
-
-        options.add("📂 Create New Folder");
-        options.add("✅ Select This Folder");
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Select Folder in:\n" + currentDir.getAbsolutePath());
-        builder.setItems(options.toArray(new String[0]), (dialog, which) -> {
-            if (which < subFolders.length) {
-                // Navigate into subfolder
-                openFolderPicker(subFolders[which], selectedItems);
-            } else if (which == subFolders.length) {
-                // Create new folder
-                showCreateSubfolderDialog(currentDir, selectedItems);
-            } else {
-                // Move to selected folder
-                moveFilesToFolder(selectedItems, currentDir);
-            }
-        });
-
-        builder.setNegativeButton("Cancel", null);
-        builder.show();
-    }
-
-    private void showCreateSubfolderDialog(File parentFolder, List<MediaItemDeleted> selectedItems) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Create New Folder in:\n" + parentFolder.getAbsolutePath());
-
-        final EditText input = new EditText(this);
-        input.setHint("Folder name");
-        builder.setView(input);
-
-        builder.setPositiveButton("Create", (dialog, which) -> {
-            String folderName = input.getText().toString().trim();
-            if (!folderName.isEmpty()) {
-                File newFolder = new File(parentFolder, folderName);
-                if (!newFolder.exists()) {
-                    if (newFolder.mkdirs()) {
-                        Toast.makeText(this, "Folder created", Toast.LENGTH_SHORT).show();
-                        openFolderPicker(newFolder, selectedItems); // Open new folder
-                    } else {
-                        Toast.makeText(this, "Failed to create folder", Toast.LENGTH_SHORT).show();
-                    }
-                } else {
-                    Toast.makeText(this, "Folder already exists", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
-
-        builder.setNegativeButton("Cancel", null);
-        builder.show();
-    }
-
-    private void moveFilesToFolder(List<MediaItemDeleted> selectedItems, File destinationFolder) {
-        boolean anyFileMoved = false;
-
-        for (MediaItemDeleted item : selectedItems) {
-            File sourceFile = new File(item.getFilePath());
-            File destFile = new File(destinationFolder, sourceFile.getName());
-
-            try {
-                if (copyFile(sourceFile, destFile)) {
-                    if (sourceFile.delete()) {
-                        item.setFilePath(destFile.getAbsolutePath());
-                        anyFileMoved = true;
-                    } else {
-                        Toast.makeText(this, "Copied but failed to delete: " + sourceFile.getName(), Toast.LENGTH_SHORT).show();
-                    }
-                } else {
-                    Toast.makeText(this, "Failed to copy: " + sourceFile.getName(), Toast.LENGTH_SHORT).show();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-                Toast.makeText(this, "Error moving: " + sourceFile.getName(), Toast.LENGTH_SHORT).show();
-            }
-        }
-
-        if (anyFileMoved) {
-            Toast.makeText(this, "Files moved successfully", Toast.LENGTH_SHORT).show();
-            loadFileList();
-        }
-    }
-    private boolean copyFile(File source, File dest) throws IOException {
-        try (InputStream in = new FileInputStream(source);
-             OutputStream out = new FileOutputStream(dest)) {
-            byte[] buffer = new byte[1024];
-            int length;
-            while ((length = in.read(buffer)) > 0) {
-                out.write(buffer, 0, length);
-            }
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+        AllFeaturesUtils.moveSelectedFiles(
+                this,
+                fullMediaItemList,
+                this::updateSelectionToolbar,
+                this::loadFileList
+        );
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.sort_menu, menu);
-        MenuItem searchItem = menu.findItem(R.id.action_search);
-        if (searchItem != null) {
-            SearchView searchView = (SearchView) searchItem.getActionView();
-            if (searchView != null) {
-                searchView.setQueryHint("Search Files...");
 
-                searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-                    @Override
-                    public boolean onQueryTextSubmit(String query) {
-                        currentQuery = query;
-                        filterFiles(query, excludedFolders, excludedExtensions);
-                        return true;
-                    }
-
-                    @Override
-                    public boolean onQueryTextChange(String newText) {
-                        currentQuery = newText;
-                        filterFiles(newText, excludedFolders, excludedExtensions);
-                        return true;
-                    }
-                });
-                searchItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS | MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
-            }
-        }
-        MenuItem filterItem = menu.findItem(R.id.action_filter);
-        if (filterItem != null) {
-            filterItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
-        }
+        AllFeaturesUtils.setupSearch(menu, this, query -> {
+            currentQuery = query;
+            filterFiles(query, excludedFolders, excludedExtensions);
+        });
 
         return true;
     }
 
-    private String getFileHash(String filePath) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("MD5");
-            FileInputStream fis = new FileInputStream(filePath);
-
-            byte[] byteArray = new byte[1024];
-            int bytesRead;
-            int totalRead = 0;
-            int maxBytes = 1024 * 1024; // 1MB (can adjust this value as needed)
-
-            while ((bytesRead = fis.read(byteArray)) != -1 && totalRead < maxBytes) {
-                digest.update(byteArray, 0, bytesRead);
-                totalRead += bytesRead;
-            }
-            fis.close();
-
-            byte[] hashBytes = digest.digest();
-            StringBuilder sb = new StringBuilder();
-            for (byte b : hashBytes) {
-                sb.append(String.format("%02x", b));
-            }
-            return sb.toString();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-
-    private class HideDuplicatesTask extends AsyncTask<Void, Void, List<MediaItemDeleted>> {
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            Toast.makeText(AllDataRecovery.this, "Hiding duplicates, please wait...", Toast.LENGTH_SHORT).show();
-        }
-
-        @Override
-        protected List<MediaItemDeleted> doInBackground(Void... voids) {
-            Map<Long, List<MediaItemDeleted>> sizeMap = new HashMap<>();
-            for (MediaItemDeleted item : fullMediaItemList) {
-                if (item != null && item.path != null) {
-                    File file = new File(item.path);
-                    if (file.exists()) {
-                        long size = file.length();
-                        sizeMap.computeIfAbsent(size, k -> new ArrayList<>()).add(item);
-                    }
-                }
-            }
-
-            Set<String> seenHashes = new HashSet<>();
-            List<MediaItemDeleted> uniqueFiles = new ArrayList<>();
-
-            for (List<MediaItemDeleted> group : sizeMap.values()) {
-                if (group.size() == 1) {
-                    uniqueFiles.add(group.get(0));
-                } else {
-                    for (MediaItemDeleted item : group) {
-                        String hash = getFileHash(item.path);
-                        if (hash != null && !seenHashes.contains(hash)) {
-                            seenHashes.add(hash);
-                            uniqueFiles.add(item);
-                        }
-                    }
-                }
-            }
-
-            return uniqueFiles;
-        }
-
-        @Override
-        protected void onPostExecute(List<MediaItemDeleted> result) {
-            isShowingDuplicates = false;
-
-            currentFilteredBaseList.clear();
-            currentFilteredBaseList.addAll(result);
-
-            restoredFiles.clear();
-            restoredFiles.addAll(result);
-            sortFiles();
-            adapter.notifyDataSetChanged();
-
-            if (result.isEmpty()) {
-                Toast.makeText(AllDataRecovery.this, "No unique files found", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(AllDataRecovery.this, "Duplicates Hidden Based on Content", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-
-    private class ShowOnlyDuplicatesTask extends AsyncTask<Void, Void, List<MediaItemDeleted>> {
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            Toast.makeText(AllDataRecovery.this, "Finding duplicates, please wait...", Toast.LENGTH_SHORT).show();
-        }
-
-        @Override
-        protected List<MediaItemDeleted> doInBackground(Void... voids) {
-            Map<Long, List<MediaItemDeleted>> sizeMap = new HashMap<>();
-            for (MediaItemDeleted item : fullMediaItemList) {
-                if (item != null && item.path != null) {
-                    File file = new File(item.path);
-                    if (file.exists()) {
-                        long size = file.length();
-                        sizeMap.computeIfAbsent(size, k -> new ArrayList<>()).add(item);
-                    }
-                }
-            }
-
-            Map<String, Integer> hashCountMap = new HashMap<>();
-            Map<String, MediaItemDeleted> hashToItem = new HashMap<>();
-            List<MediaItemDeleted> duplicates = new ArrayList<>();
-
-            for (List<MediaItemDeleted> group : sizeMap.values()) {
-                if (group.size() > 1) {
-                    for (MediaItemDeleted item : group) {
-                        String hash = getFileHash(item.path);
-                        if (hash != null) {
-                            int count = hashCountMap.getOrDefault(hash, 0);
-                            hashCountMap.put(hash, count + 1);
-                            if (count == 1) {
-                                duplicates.add(hashToItem.get(hash));
-                                duplicates.add(item);
-                            } else if (count > 1) {
-                                duplicates.add(item);
-                            } else {
-                                hashToItem.put(hash, item);
-                            }
-                        }
-                    }
-                }
-            }
-
-            return duplicates;
-        }
-
-        @Override
-        protected void onPostExecute(List<MediaItemDeleted> result) {
-            isShowingDuplicates = true;
-            duplicateList.clear();
-            duplicateList.addAll(result);
-
-            currentFilteredBaseList.clear();
-            currentFilteredBaseList.addAll(result);
-
-            restoredFiles.clear();
-            restoredFiles.addAll(result);
-            sortFiles();
-            adapter.notifyDataSetChanged();
-
-            if (result.isEmpty()) {
-                Toast.makeText(AllDataRecovery.this, "No duplicate files found", Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(AllDataRecovery.this, "Showing Only Duplicates Based on Content", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
     private void hideDuplicates() {
-        new HideDuplicatesTask().execute();
+        AllFeaturesUtils.hideDuplicates(
+                this,
+                fullMediaItemList,
+                currentFilteredBaseList,
+                restoredFiles,
+                this::sortFiles,
+                adapter
+        );
     }
 
     private void showOnlyDuplicates() {
-        new ShowOnlyDuplicatesTask().execute();
+        AllFeaturesUtils.showOnlyDuplicates(
+                this,
+                fullMediaItemList,
+                currentFilteredBaseList,
+                restoredFiles,
+                duplicateList,
+                this::sortFiles,
+                adapter
+        );
     }
 }

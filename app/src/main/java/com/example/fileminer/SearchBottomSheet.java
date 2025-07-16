@@ -230,7 +230,7 @@ public class SearchBottomSheet extends BottomSheetDialogFragment {
             case "Video":
                 return ext.matches("\\.(mp4|mkv|avi|3gp|webm|mov)");
             case "Audio":
-                return ext.matches("\\.(mp3|wav|m4a|aac|ogg|flac)");
+                return ext.matches("\\.(mp3|wav|m4a|aac|ogg|flac|opus)");
             case "Document":
                 return ext.matches("\\.(pdf|doc|docx|xls|xlsx|ppt|pptx|txt)");
             default:
