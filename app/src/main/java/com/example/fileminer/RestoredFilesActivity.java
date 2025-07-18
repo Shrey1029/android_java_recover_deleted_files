@@ -1,101 +1,68 @@
 package com.example.fileminer;
 
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
-import android.graphics.Bitmap;
-import android.graphics.Color;
-import android.graphics.drawable.Drawable;
-import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
-import android.os.Looper;
 import android.provider.MediaStore;
-import android.text.InputType;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
-import android.webkit.MimeTypeMap;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.CheckBox;
-import android.widget.EditText;
 import android.widget.GridView;
-import android.widget.ImageView;
-import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatDelegate;
-import androidx.appcompat.widget.SearchView;
 
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.engine.DiskCacheStrategy;
-import com.bumptech.glide.request.target.SimpleTarget;
-import com.bumptech.glide.request.transition.Transition;
-import android.content.DialogInterface; // Import this
 import androidx.appcompat.widget.Toolbar;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.security.MessageDigest;
-import java.io.FileInputStream;
-
 
 public class RestoredFilesActivity extends AppCompatActivity implements ToolbarUpdateListener, FileDeleteListener{
 
     private GridView listView;
     private MediaAdapter adapter;
     private ArrayList<MediaItem> restoredFiles;
-    private String currentSort = "time";
-    private boolean isAscending = false;
-
     private ArrayList<MediaItem> selectedFiles;
     ProgressBar progressBar;
-    private String selectedSearchType = "Contains";
     private List<String> fileList = new ArrayList<>();
     TextView noResultsText;
     private List<MediaItem> fullMediaItemList = new ArrayList<>();
     private boolean isCaseSensitive = false;
     private boolean showPath = false;
-    private boolean setSelected = false;
-
     private List<String> excludedFolders = new ArrayList<>();
     private List<String> excludedExtensions = new ArrayList<>();
     private boolean isShowingDuplicates = false;
     private List<MediaItem> duplicateList = new ArrayList<>();
-
     private List<MediaItem> currentFilteredBaseList = new ArrayList<>();
     private String currentQuery = "";
+    private String currentSort = "time";
+    private boolean isAscending = false;
+    private String selectedSearchType = "Contains";
+
+    //--- exclude for extension and folder
+    private String fileType = "Photo";
 
     Toolbar selectionToolbar;
 
-    private String fileType = "Photo";
+    //-----------deleted
+    List<File> deletedFiles;
+    private static final int MAX_FILES = 500;
+
+    //--------Hidden Files
+    private final List<String> hiddenFilesList = new ArrayList<>();
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -175,12 +142,24 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
                 case "Document":
                     new LoadDocumentFilesTask().execute();
                     break;
+                case "Deleted":
+                    startFileScan();
+                    break;
+                case "Hidden":
+                    showHiddenFiles();
+                    break;
+                case "OtherFiles":
+                    fetchOtherFiles();
+                    break;
                 default:
                     new LoadAllFilesTask().execute();
                     break;
             }
         }
+
     }
+
+    //------------ image, audio, vedio, document Files
     private class LoadMediaFilesTask extends AsyncTask<Uri, Void, ArrayList<MediaItem>> {
         @Override
         protected void onPreExecute() {
@@ -320,6 +299,235 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
         }
     }
 
+    //---------------Deleted Files
+    private void startFileScan() {
+        progressBar.setVisibility(View.VISIBLE);
+        listView.setVisibility(View.GONE);
+
+        new Thread(() -> {
+            deletedFiles = new ArrayList<>();
+            Set<String> seenPaths = new HashSet<>();
+
+            File rootDir = Environment.getExternalStorageDirectory();
+            searchTrashedFiles(rootDir, 0, seenPaths);
+
+            runOnUiThread(() -> {
+                progressBar.setVisibility(View.GONE);
+                listView.setVisibility(View.VISIBLE);
+
+                if (deletedFiles.isEmpty()) {
+                    Toast.makeText(this, "No deleted files found!", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, deletedFiles.size() + " deleted files found!", Toast.LENGTH_SHORT).show();
+                }
+
+                //---change in this
+                restoredFiles.clear();
+                fullMediaItemList.clear();
+
+                for (File file : deletedFiles) {
+                    MediaItem item = new MediaItem(file.getName(), file.getAbsolutePath());
+                    restoredFiles.add(item);
+                    fullMediaItemList.add(item);
+                }
+
+                sortFiles(); // sort after scan
+                adapter = new MediaAdapter(this, restoredFiles, RestoredFilesActivity.this , this);
+                listView.setAdapter(adapter);
+            });
+
+        }).start();
+    }
+    private void searchTrashedFiles(File dir, int depth, Set<String> seenPaths) {
+        if (dir == null || !dir.exists() || !dir.isDirectory() || depth > 10 || deletedFiles.size() >= MAX_FILES)
+            return;
+
+        File[] files = dir.listFiles();
+        if (files == null) return;
+
+        for (File file : files) {
+            String absPath = file.getAbsolutePath();
+            if (seenPaths.contains(absPath)) continue;
+            seenPaths.add(absPath);
+
+            if (file.isDirectory()) {
+                searchTrashedFiles(file, depth + 1, seenPaths);
+            } else if (isDeletedFile(file)) {
+                deletedFiles.add(file);
+            }
+        }
+    }
+    private boolean isTrashFolder(File file) {
+        String name = file.getName().toLowerCase();
+        return name.startsWith(".trashed-") || name.startsWith(".trashed") || name.equals(".recycle") || name.equals(".trash") || name.equals("_.trashed");
+
+    }
+    private boolean isDeletedFile(File file) {
+        File parentDir = file.getParentFile();
+        return parentDir != null && isTrashFolder(parentDir) || file.getName().startsWith(".trashed-");
+    }
+
+    //-------------------Hidden Files
+    private void showHiddenFiles() {
+        File directory = Environment.getExternalStorageDirectory();
+        if (directory != null && directory.exists()) {
+            hiddenFilesList.clear();
+            scanHiddenFolders(directory);
+        }
+
+        if (hiddenFilesList.isEmpty()) {
+            Toast.makeText(this, "No hidden photos or videos found", Toast.LENGTH_SHORT).show();
+        } else {
+            restoredFiles.clear();
+            for (String path : hiddenFilesList) {
+                File file = new File(path);
+                String name = file.getName();
+                long size = file.length();
+                long modified = file.lastModified();
+
+                MediaItem item = new MediaItem(name, path);
+                item.size = size;
+                item.dateModified = modified;
+
+                restoredFiles.add(item);
+            }
+            fullMediaItemList.clear();
+            fullMediaItemList.addAll(restoredFiles);
+
+            sortFiles();  // Sort current list
+
+            adapter = new MediaAdapter(this, restoredFiles, this, this);
+            listView.setAdapter(adapter);
+            adapter.notifyDataSetChanged();
+        }
+    }
+    private void scanHiddenFolders(File directory) {
+        if (directory == null || !directory.exists() || !directory.canRead()) {
+            Log.e("HiddenFiles", "Cannot access directory: " + (directory != null ? directory.getAbsolutePath() : "null"));
+            return;
+        }
+
+        File[] files = directory.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isDirectory() && file.getName().startsWith(".")) {
+                    Log.d("HiddenFiles", "Hidden folder found: " + file.getAbsolutePath());
+                    listHiddenFiles(file);
+                }
+            }
+        }
+    }
+    private void listHiddenFiles(File folder) {
+        if (folder == null || !folder.exists() || !folder.canRead()) {
+            Log.e("HiddenFiles", "Cannot read folder: " + (folder != null ? folder.getAbsolutePath() : "null"));
+            return;
+        }
+
+        File[] files = folder.listFiles();
+        if (files == null) {
+            Log.e("HiddenFiles", "Files list is null for: " + folder.getAbsolutePath());
+            return;
+        }
+
+        for (File file : files) {
+            if (file.isFile() && isPhotoOrVideo(file)) {
+                hiddenFilesList.add(file.getAbsolutePath());
+                Log.d("HiddenFiles", "Hidden photo or video found: " + file.getAbsolutePath());
+            }
+        }
+    }
+    private boolean isPhotoOrVideo(File file) {
+        if (file == null || !file.exists()) return false;
+        String[] photoExtensions = {
+                ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".tiff"
+        };
+
+        String[] videoExtensions = {
+                ".mp4", ".mkv", ".avi", ".mov", ".flv" ,  ".pdf", ".ppt", ".pptx", ".odt", ".doc", ".docx", ".xls", ".xlsx"
+        };
+
+        String fileName = file.getName().toLowerCase();
+
+        for (String ext : photoExtensions) {
+            if (fileName.endsWith(ext)) return true;
+        }
+        for (String ext : videoExtensions) {
+            if (fileName.endsWith(ext)) return true;
+        }
+        return false;
+    }
+
+    //----------OtherFiles
+    private void fetchOtherFiles() {
+        progressBar.setVisibility(View.VISIBLE);
+        listView.setVisibility(View.GONE);
+
+        new Thread(() -> {
+            File directory = new File("/storage/emulated/0/");
+            restoredFiles = new ArrayList<>();
+            fullMediaItemList = new ArrayList<>();
+
+            searchFiles(directory);
+            sortFiles();
+
+            fullMediaItemList.addAll(restoredFiles);
+            runOnUiThread(() -> {
+                adapter = new MediaAdapter(this, restoredFiles, this, this);
+                listView.setAdapter(adapter);
+                progressBar.setVisibility(View.GONE);
+                listView.setVisibility(View.VISIBLE);
+            });
+        }).start();
+    }
+    private void searchFiles(File dir) {
+        try {
+            if (dir != null && dir.isDirectory() && !isExcludedFolder(dir) && !dir.getName().startsWith(".")) {
+                File[] files = dir.listFiles();
+                if (files != null) {
+                    for (File file : files) {
+                        if (file.isFile() && !file.getName().startsWith(".") &&
+                                !isExcludedFileType(file) && !isTooSmall(file)) {
+                            restoredFiles.add(new MediaItem(file.getName(), file.getAbsolutePath()));
+                        } else if (file.isDirectory() && file.canRead()) {
+                            searchFiles(file);
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    private boolean isExcludedFolder(File file) {
+        String path = file.getAbsolutePath();
+        return path.contains("/WhatsApp/Media/.Statuses") ||
+                path.contains("/Android/media/com.whatsapp/WhatsApp/Media/.Statuses") ||
+                path.contains("/Android/data/") ||
+                path.contains("/Android/obb/") ||
+                path.contains("/.thumbnails") ||
+                path.contains("/.cache") ||
+                path.contains("/Telegram/") ||
+                path.contains("/Instagram/") ||
+                path.contains("/MIUI/") ||
+                path.contains("/com.miui.backup/") ||
+                path.contains("/Logs/") || path.contains("_.trashed") || path.contains(".trashed") ||
+                path.contains(".recycle") || path.contains(".trash");
+
+    }
+    private boolean isTooSmall(File file) {
+        return file.length() < 10 * 1024;
+    }
+    private boolean isExcludedFileType(File file) {
+        String name = file.getName().toLowerCase();
+        return name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".png") ||
+                name.endsWith(".mp4") || name.endsWith(".avi") || name.endsWith(".mkv") ||
+                name.endsWith(".pdf") || name.endsWith(".mp3") || name.endsWith(".wav") ||
+                name.endsWith(".odt") || name.endsWith(".pptx") || name.endsWith(".doc") ||
+                name.endsWith(".docx") ;
+    }
+
+
+    //----------open file with the help of external apps
     private void openFile(String filePath) {
         if (filePath == null) return;
 
@@ -511,8 +719,8 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
         AllFeaturesUtils.moveSelectedFiles(
                 this,
                 fullMediaItemList,
-                this::updateSelectionToolbar,  // callback to refresh toolbar
-                this::loadFileList             // callback to refresh files after move
+                this::updateSelectionToolbar,
+                this::loadFileList
         );
     }
 
@@ -523,7 +731,7 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
 
         AllFeaturesUtils.setupSearch(menu, this, query -> {
             currentQuery = query;
-            filterFiles(query, excludedFolders, excludedExtensions); // Define this if moved to utils
+            filterFiles(query, excludedFolders, excludedExtensions);
         });
 
         return true;

@@ -200,9 +200,11 @@ public class MainActivity2 extends Activity {
         btnVideo.setOnClickListener(v -> navigateToCategory("Video"));
         btnAudio.setOnClickListener(v -> navigateToCategory("Audio"));
         btnDocument.setOnClickListener(v -> navigateToCategory("Document"));
-        btnRecycle.setOnClickListener(v -> navigateToRecycleBin());
-        btnhidden.setOnClickListener(v -> navigateToHiddenFiles());
-        btnOtherFiles.setOnClickListener(v -> navigateotherdata());
+        btnRecycle.setOnClickListener(v -> navigateToCategory("Deleted"));
+        btnhidden.setOnClickListener(v -> navigateToCategory("Hidden"));
+        btnOtherFiles.setOnClickListener(v -> navigateToCategory("OtherFiles"));
+//      btnhidden.setOnClickListener(v -> navigateToHiddenFiles());
+  //      btnOtherFiles.setOnClickListener(v -> navigateotherdata());
     }
 
     private void navigateToCategory(String category) {
@@ -211,20 +213,20 @@ public class MainActivity2 extends Activity {
         startActivity(intent);
     }
 
-    private void navigateToRecycleBin() {
-        Intent intent = new Intent(MainActivity2.this, AllDataRecovery.class);
-        startActivity(intent);
-    }
+//    private void navigateToRecycleBin() {
+//        Intent intent = new Intent(MainActivity2.this, AllDataRecovery.class);
+//        startActivity(intent);
+//    }
 
-    private void navigateToHiddenFiles() {
-        Intent intent = new Intent(MainActivity2.this, HiddenFilesActivity.class);
-        startActivity(intent);
-    }
+//    private void navigateToHiddenFiles() {
+//        Intent intent = new Intent(MainActivity2.this, HiddenFilesActivity.class);
+//        startActivity(intent);
+//    }
 
-    private void navigateotherdata(){
-        Intent intent = new Intent(MainActivity2.this, OtherFilesActivity.class);
-        startActivity(intent);
-    }
+//    private void navigateotherdata(){
+//        Intent intent = new Intent(MainActivity2.this, OtherFilesActivity.class);
+//        startActivity(intent);
+//    }
 
     private void showToast(String message) {
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
