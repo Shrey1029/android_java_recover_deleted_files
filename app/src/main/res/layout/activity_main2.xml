@@ -13,7 +13,7 @@
         android:id="@+id/appTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text=" FILE JUNK CLEANER"
+        android:text="@string/app_name"
         android:textColor="@color/colorOnPrimary"
         android:textSize="24sp"
         android:textStyle="bold"
@@ -44,7 +44,7 @@
             android:id="@+id/progressText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="0%"
+            android:text="@string/storage"
             android:textSize="22sp"
             android:textColor="@color/colorOnPrimary"
             android:textStyle="bold"
@@ -64,7 +64,7 @@
             android:id="@+id/usedStorage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="0 Used"
+            android:text="@string/usedstorage"
             android:textColor="@color/colorOnPrimary"
             android:textSize="18sp"
             android:layout_weight="1" />
@@ -72,7 +72,7 @@
             android:id="@+id/freeStorage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="0 GB Free"
+            android:text="@string/freestorage"
             android:textColor="@color/colorOnPrimary"
             android:textSize="18sp"
             android:layout_weight="1"
@@ -97,7 +97,7 @@
             android:layout_rowWeight="1"
             android:minWidth="100dp"
             android:minHeight="100dp"
-            android:text="Photo"
+            android:text="@string/photo"
             android:textColor="#FFFFFF"
             android:textSize="14sp"
             android:drawablePadding="2dp"
@@ -114,7 +114,7 @@
             android:layout_rowWeight="1"
             android:minWidth="100dp"
             android:minHeight="100dp"
-            android:text="Video"
+            android:text="@string/video"
             android:textColor="#FFFFFF"
             android:textSize="14sp"
             android:drawablePadding="2dp"
@@ -131,7 +131,7 @@
             android:layout_rowWeight="1"
             android:minWidth="100dp"
             android:minHeight="100dp"
-            android:text="Audio"
+            android:text="@string/audio"
             android:textColor="#FFFFFF"
             android:textSize="14sp"
             android:drawablePadding="2dp"
@@ -148,7 +148,7 @@
             android:layout_rowWeight="1"
             android:minWidth="100dp"
             android:minHeight="100dp"
-            android:text="Document"
+            android:text="@string/document"
             android:textColor="#FFFFFF"
             android:textSize="14sp"
             android:drawablePadding="2dp"
@@ -165,43 +165,47 @@
         android:layout_alignParentBottom="true"
         android:orientation="horizontal"
         android:weightSum="3"
-        android:padding="8dp">
+        android:padding="8dp"
+       >
 
         <Button
             android:id="@+id/btnRecycle"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="Deleted Data"
+            android:text="@string/deleteddata"
             android:textColor="#FFFFFF"
             android:textSize="14sp"
             android:drawableTop="@drawable/ic_recycle"
             android:backgroundTint="#00D084"
-            android:gravity="center" />
+            android:gravity="center"
+            android:layout_margin="5dp" />
 
         <Button
             android:id="@+id/btnHidden"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="Hidden Data"
+            android:text="@string/hiddendata"
             android:textColor="#FFFFFF"
             android:textSize="14sp"
             android:drawableTop="@drawable/ic_hidden"
             android:backgroundTint="#00D084"
-            android:gravity="center" />
+            android:gravity="center"
+            android:layout_margin="5dp"/>
 
         <Button
             android:id="@+id/btnOtherFiles"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:text="Other Files"
+            android:text="@string/otherfiles"
             android:layout_weight="1"
             android:textColor="#FFFFFF"
             android:textSize="14sp"
             android:drawableTop="@drawable/ic_other_files"
             android:backgroundTint="#00D084"
-            android:gravity="center" />
+            android:gravity="center"
+            android:layout_margin="5dp"/>
 
     </LinearLayout>
 
