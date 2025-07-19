@@ -1,5 +1,39 @@
 <resources>
     <string name="app_name">File Junk Cleaner</string>
+    <string name="photo">Photo</string>
+    <string name="video">Video</string>
+    <string name="audio">Audio</string>
+    <string name="document">Document</string>
+    <string name="deleteddata">Deleted Data</string>
+    <string name="hiddendata">Hidden Data</string>
+    <string name="otherfiles">Other Files</string>
+    <!--storage-->
+    <string name="storage">0%</string>
+    <string name="usedstorage">0 Used</string>
+    <string name="freestorage">0 GB Free</string>
+    <!--  for permissiom-->
+    <string name="permissionrequired">Permission Required</string>
+    <string name="allow">Allow</string>
+    <!-- for resored activiy -->
+    <string name="noresulttext">No files found with this name!</string>
+    <!--  for bottom sheet layout -->
+    <string name="searchtype">Search Type</string>
+    <string name="contains">Contains</string>
+    <string name="startwith">Starts With</string>
+    <string name="endwith">Ends With</string>
+    <string name="filepath">File Path</string>
+    <string name="casesensitivity">Case Sensitivity</string>
+    <string name="casesensitive">Case Sensitive</string>
+    <string name="caseinsensitive">Case Insensitive</string>
+    <string name="excludefolders">Exclude Folders</string>
+    <string name="foledrbox">Select folders to exclude</string>
+    <string name="excludeextension">Exclude Extension</string>
+    <string name="extensionbox">Select file extensions to exclude</string>
+    <!--    for media file list -->
+    <string name="share">Share</string>
+    <string name="delete">Delete</string>
+    <string name="filename">File Name</string>
+
     <string-array name="search_options">
         <item>Contains</item>
         <item>Starts with</item>

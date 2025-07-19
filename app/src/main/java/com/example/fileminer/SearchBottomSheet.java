@@ -1,4 +1,5 @@
 // Updated: Caches fileType-specific folders and extensions separately
+// Fixed memory leaks using static inner classes with WeakReference
 package com.example.fileminer;
 
 import android.app.Dialog;
@@ -17,9 +18,11 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
 import java.io.File;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 public class SearchBottomSheet extends BottomSheetDialogFragment {
@@ -74,7 +77,7 @@ public class SearchBottomSheet extends BottomSheetDialogFragment {
         excludeExtensionsTextView.setText("Loading extensions...");
 
         if (!SearchCache.folderMap.containsKey(fileType)) {
-            new LoadFoldersTask().execute();
+            new LoadFoldersTask(this, fileType).execute();
         } else {
             allFolders.clear();
             allFolders.addAll(SearchCache.folderMap.get(fileType));
@@ -83,7 +86,7 @@ public class SearchBottomSheet extends BottomSheetDialogFragment {
         }
 
         if (!SearchCache.extensionMap.containsKey(fileType)) {
-            new LoadExtensionsTask().execute();
+            new LoadExtensionsTask(this, fileType).execute();
         } else {
             allExtensions.clear();
             allExtensions.addAll(SearchCache.extensionMap.get(fileType));
@@ -118,49 +121,77 @@ public class SearchBottomSheet extends BottomSheetDialogFragment {
         return dialog;
     }
 
-    private class LoadFoldersTask extends AsyncTask<Void, Void, List<String>> {
+    private static class LoadFoldersTask extends AsyncTask<Void, Void, List<String>> {
+        private final WeakReference<SearchBottomSheet> ref;
+        private final String fileType;
+
+        LoadFoldersTask(SearchBottomSheet sheet, String fileType) {
+            this.ref = new WeakReference<>(sheet);
+            this.fileType = fileType;
+        }
+
         @Override
         protected List<String> doInBackground(Void... voids) {
             Set<String> folderNames = new HashSet<>();
-            getFolderNamesRecursively(Environment.getExternalStorageDirectory(), folderNames);
+            SearchBottomSheet sheet = ref.get();
+            if (sheet != null) {
+                sheet.getFolderNamesRecursively(Environment.getExternalStorageDirectory(), folderNames);
+            }
             return new ArrayList<>(folderNames);
         }
 
         @Override
         protected void onPostExecute(List<String> result) {
-            SearchCache.folderMap.put(fileType, result);
-            allFolders.clear();
-            allFolders.addAll(result);
-            excludeFoldersTextView.setEnabled(true);
-            updateExcludeTextView(excludeFoldersTextView);
+            SearchBottomSheet sheet = ref.get();
+            if (sheet != null) {
+                SearchCache.folderMap.put(fileType, result);
+                sheet.allFolders.clear();
+                sheet.allFolders.addAll(result);
+                sheet.excludeFoldersTextView.setEnabled(true);
+                sheet.updateExcludeTextView(sheet.excludeFoldersTextView);
+            }
         }
     }
 
-    private class LoadExtensionsTask extends AsyncTask<Void, Void, List<String>> {
+    private static class LoadExtensionsTask extends AsyncTask<Void, Void, List<String>> {
+        private final WeakReference<SearchBottomSheet> ref;
+        private final String fileType;
+
+        LoadExtensionsTask(SearchBottomSheet sheet, String fileType) {
+            this.ref = new WeakReference<>(sheet);
+            this.fileType = fileType;
+        }
+
         @Override
         protected List<String> doInBackground(Void... voids) {
             Set<String> extensions = new HashSet<>();
-            getExtensionsRecursively(Environment.getExternalStorageDirectory(), extensions);
+            SearchBottomSheet sheet = ref.get();
+            if (sheet != null) {
+                sheet.getExtensionsRecursively(Environment.getExternalStorageDirectory(), extensions);
+            }
             return new ArrayList<>(extensions);
         }
 
         @Override
         protected void onPostExecute(List<String> result) {
-            SearchCache.extensionMap.put(fileType, result);
-            allExtensions.clear();
-            allExtensions.addAll(result);
-            excludeExtensionsTextView.setEnabled(true);
-            updateExcludeExtensionsTextView(excludeExtensionsTextView);
+            SearchBottomSheet sheet = ref.get();
+            if (sheet != null) {
+                SearchCache.extensionMap.put(fileType, result);
+                sheet.allExtensions.clear();
+                sheet.allExtensions.addAll(result);
+                sheet.excludeExtensionsTextView.setEnabled(true);
+                sheet.updateExcludeExtensionsTextView(sheet.excludeExtensionsTextView);
+            }
         }
     }
 
-    private boolean isDeletedFile(File file) {
+private boolean isDeletedFile(File file) {
         File parentDir = file.getParentFile();
         return parentDir != null && isTrashFolder(parentDir) || file.getName().startsWith(".trashed-");
     }
 
     private boolean isTrashFolder(File file) {
-        String name = file.getName().toLowerCase();
+        String name = file.getName().toLowerCase(Locale.ROOT);
         return name.startsWith(".trashed-") || name.startsWith(".trashed") ||
                 name.equals(".recycle") || name.equals(".trash") || name.equals("_.trashed");
     }
@@ -183,7 +214,7 @@ public class SearchBottomSheet extends BottomSheetDialogFragment {
                 String name = file.getName();
                 int dotIndex = name.lastIndexOf('.');
                 if (dotIndex != -1) {
-                    String ext = name.substring(dotIndex).toLowerCase();
+                    String ext = name.substring(dotIndex).toLowerCase(Locale.ROOT);
                     boolean match = isExtensionMatchingType(ext);
                     if ((fileType.equals("Deleted") && isDeletedFile(file)) ||
                             (fileType.equals("Hidden") && isHiddenFile(file)) ||
@@ -211,7 +242,7 @@ public class SearchBottomSheet extends BottomSheetDialogFragment {
                 String name = file.getName();
                 int dotIndex = name.lastIndexOf('.');
                 if (dotIndex != -1 && dotIndex < name.length() - 1) {
-                    String ext = name.substring(dotIndex).toLowerCase();
+                    String ext = name.substring(dotIndex).toLowerCase(Locale.ROOT);
                     if ((fileType.equals("Deleted") && isDeletedFile(file)) ||
                             (fileType.equals("Hidden") && isHiddenFile(file)) ||
                             (!fileType.equals("Deleted") && !fileType.equals("Hidden") && isExtensionMatchingType(ext))) {
@@ -237,8 +268,10 @@ public class SearchBottomSheet extends BottomSheetDialogFragment {
                 return true;
         }
     }
-private void showFolderSelectionDialog() {
+    private void showFolderSelectionDialog() {
         boolean[] checkedItems = new boolean[allFolders.size()];
+        List<String> tempExcluded = new ArrayList<>(excludedFolders); // Temporary copy
+
         for (int i = 0; i < allFolders.size(); i++) {
             checkedItems[i] = excludedFolders.contains(allFolders.get(i));
         }
@@ -247,22 +280,25 @@ private void showFolderSelectionDialog() {
                 .setTitle("Select Folders to Exclude")
                 .setMultiChoiceItems(allFolders.toArray(new String[0]), checkedItems, (dialog, which, isChecked) -> {
                     String folder = allFolders.get(which);
-                    if (isChecked && !excludedFolders.contains(folder)) {
-                        excludedFolders.add(folder);
-                    } else {
-                        excludedFolders.remove(folder);
+                    if (isChecked && !tempExcluded.contains(folder)) {
+                        tempExcluded.add(folder);
+                    } else if (!isChecked) {
+                        tempExcluded.remove(folder);
                     }
                 })
                 .setPositiveButton("OK", (dialog, which) -> {
+                    excludedFolders.clear();
+                    excludedFolders.addAll(tempExcluded);
                     updateExcludeTextView(excludeFoldersTextView);
                     notifyListener();
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
     }
-
     private void showExtensionSelectionDialog() {
         boolean[] checkedItems = new boolean[allExtensions.size()];
+        List<String> tempExcluded = new ArrayList<>(excludedExtensions);
+
         for (int i = 0; i < allExtensions.size(); i++) {
             checkedItems[i] = excludedExtensions.contains(allExtensions.get(i));
         }
@@ -271,19 +307,22 @@ private void showFolderSelectionDialog() {
                 .setTitle("Select Extensions to Exclude")
                 .setMultiChoiceItems(allExtensions.toArray(new String[0]), checkedItems, (dialog, which, isChecked) -> {
                     String ext = allExtensions.get(which);
-                    if (isChecked && !excludedExtensions.contains(ext)) {
-                        excludedExtensions.add(ext);
-                    } else {
-                        excludedExtensions.remove(ext);
+                    if (isChecked && !tempExcluded.contains(ext)) {
+                        tempExcluded.add(ext);
+                    } else if (!isChecked) {
+                        tempExcluded.remove(ext);
                     }
                 })
                 .setPositiveButton("OK", (dialog, which) -> {
+                    excludedExtensions.clear();
+                    excludedExtensions.addAll(tempExcluded);
                     updateExcludeExtensionsTextView(excludeExtensionsTextView);
                     notifyListener();
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
     }
+
 
     private void updateExcludeTextView(TextView view) {
         view.setText(excludedFolders.isEmpty() ? "Select folders to exclude" : TextUtils.join(", ", excludedFolders));

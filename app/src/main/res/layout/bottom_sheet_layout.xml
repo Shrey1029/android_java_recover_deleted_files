@@ -2,6 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:padding="16dp"
     android:background="?android:attr/windowBackground"
@@ -11,7 +12,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Search Type"
+        android:text="@string/searchtype"
         android:textSize="16sp"
         android:textStyle="bold"
         android:layout_marginBottom="8dp"
@@ -28,7 +29,7 @@
             android:id="@+id/radioContains"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Contains"
+            android:text="@string/contains"
             android:paddingEnd="16dp"
             android:paddingStart="16dp" />
 
@@ -36,7 +37,7 @@
             android:id="@+id/radioStartsWith"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Starts With"
+            android:text="@string/startwith"
             android:paddingEnd="16dp"
             android:paddingStart="16dp" />
 
@@ -44,14 +45,14 @@
             android:id="@+id/radioEndsWith"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Ends With"
+            android:text="@string/endwith"
             android:paddingEnd="16dp"
             android:paddingStart="16dp" />
         <RadioButton
             android:id="@+id/radioPath"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="File Path"
+            android:text="@string/filepath"
             android:paddingEnd="16dp"
             android:paddingStart="16dp" />
 
@@ -68,7 +69,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Case Sensitivity"
+        android:text="@string/casesensitivity"
         android:textSize="16sp"
         android:textStyle="bold"
         android:layout_marginBottom="8dp"
@@ -85,7 +86,7 @@
             android:id="@+id/radioCaseSensitive"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Case Sensitive"
+            android:text="@string/casesensitive"
             android:paddingEnd="16dp"
             android:paddingStart="16dp" />
 
@@ -93,7 +94,7 @@
             android:id="@+id/radioCaseInsensitive"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Case Insensitive"
+            android:text="@string/casesensitive"
             android:paddingEnd="16dp"
             android:paddingStart="16dp" />
     </RadioGroup>
@@ -107,7 +108,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Exclude Folders"
+        android:text="@string/excludefolders"
         android:textSize="16sp"
         android:textStyle="bold"
         android:layout_marginBottom="8dp"
@@ -118,11 +119,11 @@
         android:id="@+id/multiExcludeFolders"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:drawableEnd="@drawable/ic_dropdown_arrow"
+        app:drawableEndCompat="@drawable/ic_dropdown_arrow"
         android:drawablePadding="8dp"
         android:padding="12dp"
         android:background="@drawable/input_background"
-        android:hint="Select folders to exclude"
+        android:hint="@string/foledrbox"
         android:textSize="16sp" />
 
     <View
@@ -134,7 +135,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Exclude Extension"
+        android:text="@string/excludeextension"
         android:textSize="16sp"
         android:textStyle="bold"
         android:layout_marginBottom="8dp"
@@ -145,15 +146,11 @@
         android:id="@+id/multiExcludeExtensions"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Select file extensions to exclude"
+        android:text="@string/extensionbox"
         android:textColor="@color/colorOnBackground"
         android:padding="12dp"
         android:background="@drawable/input_background"
-        android:drawableEnd="@drawable/ic_dropdown_arrow"
-        android:drawableTint="@color/colorAccent"
+        app:drawableEndCompat="@drawable/ic_dropdown_arrow"
+        app:drawableTint="@color/colorAccent"
         android:textSize="16sp" />
-
-
-
-
 </LinearLayout>

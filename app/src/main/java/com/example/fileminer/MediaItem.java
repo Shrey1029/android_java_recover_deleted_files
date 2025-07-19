@@ -17,6 +17,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.FileProvider;
+import java.lang.ref.WeakReference;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.engine.DiskCacheStrategy;
@@ -71,17 +72,18 @@ public  class MediaItem {
 //------------- MediaAdapter class
 class MediaAdapter extends ArrayAdapter<MediaItem> {
     private boolean showPath = false;
-    private final Context activityContext;
-
+    private final WeakReference<Context> contextRef;
     private final ToolbarUpdateListener toolbarListener;
-
     private final FileDeleteListener fileDeleteListener;
 
-    public MediaAdapter(Context activityContext, ArrayList<MediaItem> mediaItems, ToolbarUpdateListener toolbarListener, FileDeleteListener deleteListener) {
-        super(activityContext, R.layout.media_list_item, mediaItems);
-        this.activityContext = activityContext;
+    public MediaAdapter(Context context,
+                        ArrayList<MediaItem> mediaItems,
+                        ToolbarUpdateListener toolbarListener,
+                        FileDeleteListener fileDeleteListener) {
+        super(context, R.layout.media_list_item, mediaItems);
+        this.contextRef = new WeakReference<>(context.getApplicationContext()); // Safer way
         this.toolbarListener = toolbarListener;
-        this.fileDeleteListener = deleteListener;
+        this.fileDeleteListener = fileDeleteListener;
     }
 
 

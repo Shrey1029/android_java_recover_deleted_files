@@ -1,6 +1,7 @@
 package com.example.fileminer;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Environment;
 import android.view.Menu;
@@ -23,11 +24,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -45,7 +48,6 @@ public class AllFeaturesUtils {
         selectionToolbar.setVisibility(anySelected ? View.VISIBLE : View.GONE);
     }
 
-    //------SortFiles
     public static void sortFiles(List<MediaItem> fileList, String sortType, boolean isAscending) {
         if ("name".equals(sortType)) {
             Collections.sort(fileList, (a, b) -> isAscending ?
@@ -65,7 +67,6 @@ public class AllFeaturesUtils {
         }
     }
 
-    //------------FilterFiles
     public static void filterFiles(
             String query,
             List<String> excludedFolders,
@@ -84,7 +85,7 @@ public class AllFeaturesUtils {
         List<MediaItem> filteredList = new ArrayList<>();
 
         if (!isCaseSensitive) {
-            searchQuery = searchQuery.toLowerCase();
+            searchQuery = searchQuery.toLowerCase(Locale.ROOT);
         }
 
         for (MediaItem item : baseList) {
@@ -98,9 +99,9 @@ public class AllFeaturesUtils {
             String extension = fileName.contains(".") ? fileName.substring(fileName.lastIndexOf(".")) : "";
 
             if (!isCaseSensitive) {
-                fileName = fileName.toLowerCase();
-                if (filePath != null) filePath = filePath.toLowerCase();
-                extension = extension.toLowerCase();
+                fileName = fileName.toLowerCase(Locale.ROOT);
+                if (filePath != null) filePath = filePath.toLowerCase(Locale.ROOT);
+                extension = extension.toLowerCase(Locale.ROOT);
             }
 
             if (shouldExclude(item, excludedFolders)) continue;
@@ -130,7 +131,7 @@ public class AllFeaturesUtils {
         restoredFiles.clear();
         restoredFiles.addAll(filteredList);
 
-        if (sortRunnable != null) sortRunnable.run(); // Call your existing sort logic
+        if (sortRunnable != null) sortRunnable.run();
 
         noResultsText.post(() -> {
             if (restoredFiles.isEmpty()) {
@@ -179,16 +180,29 @@ public class AllFeaturesUtils {
                                   MediaAdapter adapter,
                                   Function<File, Boolean> moveToTrashFunc) {
 
+        String fileType = getCurrentFileType(context);
+
         new AlertDialog.Builder(context)
                 .setTitle("Delete File")
                 .setMessage("Are you sure you want to delete this file?")
                 .setPositiveButton("Yes, Delete", (dialog, which) -> {
                     File file = new File(item.path);
-                    if (file.exists() && moveToTrashFunc.apply(file)) {
+                    boolean success;
+
+                    if ("Deleted".equals(fileType)) {
+                        success = file.exists() && file.delete(); // permanently delete
+                    } else {
+                        success = file.exists() && moveToTrashFunc.apply(file); // move to trash
+                    }
+
+                    if (success) {
                         restoredFiles.remove(item);
                         fullMediaItemList.removeIf(mediaItem -> mediaItem.path.equals(item.path));
                         adapter.notifyDataSetChanged();
-                        Toast.makeText(context, "File moved to trash", Toast.LENGTH_SHORT).show();
+
+                        Toast.makeText(context,
+                                "Deleted".equals(fileType) ? "File permanently deleted" : "File moved to trash",
+                                Toast.LENGTH_SHORT).show();
                     } else {
                         Toast.makeText(context, "Failed to delete file", Toast.LENGTH_SHORT).show();
                     }
@@ -203,6 +217,8 @@ public class AllFeaturesUtils {
                                            MediaAdapter adapter,
                                            Function<File, Boolean> moveToTrashFunc) {
 
+        String fileType = getCurrentFileType(context);
+
         new AlertDialog.Builder(context)
                 .setTitle("Delete Selected Files")
                 .setMessage("Are you sure you want to delete the selected files?")
@@ -212,7 +228,15 @@ public class AllFeaturesUtils {
                     for (MediaItem item : restoredFiles) {
                         if (item.isSelected()) {
                             File file = new File(item.path);
-                            if (file.exists() && moveToTrashFunc.apply(file)) {
+                            boolean success;
+
+                            if ("Deleted".equals(fileType)) {
+                                success = file.exists() && file.delete();
+                            } else {
+                                success = file.exists() && moveToTrashFunc.apply(file);
+                            }
+
+                            if (success) {
                                 itemsToDelete.add(item);
                                 fullMediaItemList.removeIf(mediaItem -> mediaItem.path.equals(item.path));
                             } else {
@@ -224,15 +248,26 @@ public class AllFeaturesUtils {
                     if (!itemsToDelete.isEmpty()) {
                         restoredFiles.removeAll(itemsToDelete);
                         adapter.notifyDataSetChanged();
-                        Toast.makeText(context, "Selected files moved to trash!", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(context,
+                                "Deleted".equals(fileType) ? "Files permanently deleted!" : "Selected files moved to trash!",
+                                Toast.LENGTH_SHORT).show();
                     } else {
                         Toast.makeText(context, "No files were deleted.", Toast.LENGTH_SHORT).show();
                     }
+
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
     }
 
+    // Util to get fileType from intent
+    private static String getCurrentFileType(Context context) {
+        if (context instanceof RestoredFilesActivity) {
+            Intent intent = ((RestoredFilesActivity) context).getIntent();
+            return intent.getStringExtra("fileType");
+        }
+        return "";
+    }
     //------------------ select all files
     public static void selectAllFiles(List<MediaItem> mediaItemList, boolean select) {
         for (MediaItem item : mediaItemList) {
@@ -383,13 +418,13 @@ public class AllFeaturesUtils {
                         return true;
                     }
                 });
-                searchItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS | MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
+                searchItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM | MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
             }
         }
 
         MenuItem filterItem = menu.findItem(R.id.action_filter);
         if (filterItem != null) {
-            filterItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+            filterItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
         }
     }
 
@@ -485,15 +520,22 @@ public class AllFeaturesUtils {
     }
 
     private static class ShowOnlyDuplicatesTask extends AsyncTask<Void, Void, List<MediaItem>> {
-        private final Context context;
-        private final List<MediaItem> fullList, filteredList, restoredList, duplicateList;
+        private final WeakReference<Context> contextRef;
+        private final List<MediaItem> fullList;
+        private final List<MediaItem> filteredList;
+        private final List<MediaItem> restoredList;
+        private final List<MediaItem> duplicateList;
         private final Runnable sortCallback;
         private final BaseAdapter adapter;
 
-        public ShowOnlyDuplicatesTask(Context context, List<MediaItem> fullList, List<MediaItem> filteredList,
-                                      List<MediaItem> restoredList, List<MediaItem> duplicateList,
-                                      Runnable sortCallback, BaseAdapter adapter) {
-            this.context = context;
+        public ShowOnlyDuplicatesTask(Context context,
+                                      List<MediaItem> fullList,
+                                      List<MediaItem> filteredList,
+                                      List<MediaItem> restoredList,
+                                      List<MediaItem> duplicateList,
+                                      Runnable sortCallback,
+                                      BaseAdapter adapter) {
+            this.contextRef = new WeakReference<>(context);
             this.fullList = fullList;
             this.filteredList = filteredList;
             this.restoredList = restoredList;
@@ -504,12 +546,17 @@ public class AllFeaturesUtils {
 
         @Override
         protected void onPreExecute() {
-            Toast.makeText(context, "Finding duplicates, please wait...", Toast.LENGTH_SHORT).show();
+            Context context = contextRef.get();
+            if (context != null) {
+                Toast.makeText(context, "Finding duplicates, please wait...", Toast.LENGTH_SHORT).show();
+            }
         }
 
         @Override
         protected List<MediaItem> doInBackground(Void... voids) {
             Map<Long, List<MediaItem>> sizeMap = new HashMap<>();
+
+            // Group files by file size
             for (MediaItem item : fullList) {
                 if (item != null && item.path != null) {
                     File file = new File(item.path);
@@ -523,6 +570,7 @@ public class AllFeaturesUtils {
             Map<String, MediaItem> hashToItem = new HashMap<>();
             List<MediaItem> duplicates = new ArrayList<>();
 
+            // From size groups, hash the files to detect true duplicates
             for (List<MediaItem> group : sizeMap.values()) {
                 if (group.size() > 1) {
                     for (MediaItem item : group) {
@@ -548,6 +596,9 @@ public class AllFeaturesUtils {
 
         @Override
         protected void onPostExecute(List<MediaItem> result) {
+            Context context = contextRef.get();
+            if (context == null) return;
+
             duplicateList.clear();
             duplicateList.addAll(result);
 
@@ -557,10 +608,18 @@ public class AllFeaturesUtils {
             restoredList.clear();
             restoredList.addAll(result);
 
-            sortCallback.run();
-            adapter.notifyDataSetChanged();
+            if (sortCallback != null) {
+                sortCallback.run();
+            }
 
-            Toast.makeText(context, result.isEmpty() ? "No duplicate files found" : "Showing Only Duplicates", Toast.LENGTH_SHORT).show();
+            if (adapter != null) {
+                adapter.notifyDataSetChanged();
+            }
+
+            Toast.makeText(context,
+                    result.isEmpty() ? "No duplicate files found" : "Showing Only Duplicates",
+                    Toast.LENGTH_SHORT).show();
         }
     }
+
 }

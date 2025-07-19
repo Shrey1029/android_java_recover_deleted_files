@@ -10,7 +10,6 @@
     android:background="@color/colorSurface"
     >
 
-    <!-- Selection Toolbar -->
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/selectionToolbar"
         android:layout_width="match_parent"
@@ -21,13 +20,10 @@
         android:theme="@style/ToolbarWhiteText"
         android:textColor="@color/black"
         app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
-    <!-- FrameLayout to stack GridView, ProgressBar, No Results -->
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
-
-        <!-- GridView for displaying files -->
         <GridView
             android:id="@+id/gridView"
             android:layout_width="match_parent"
@@ -37,40 +33,34 @@
             android:horizontalSpacing="8dp"
             android:stretchMode="columnWidth"
             android:gravity="center" />
-
-        <!-- Centered ProgressBar -->
         <ProgressBar
             android:id="@+id/progressBar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:visibility="gone" />
-
-        <!-- No Results Text -->
         <TextView
             android:id="@+id/noResultsText"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:text="No files found with this name!"
+            android:text="@string/noresulttext"
             android:textSize="16sp"
             android:gravity="center"
             android:padding="16dp"
             android:visibility="gone" />
     </FrameLayout>
+<!--    <Button-->
+<!--        android:id="@+id/btnDeleteSelected"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:text="Delete Selected Files"-->
+<!--        android:visibility="gone" />-->
 
-    <!-- Bulk Delete Button -->
-    <Button
-        android:id="@+id/btnDeleteSelected"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Delete Selected Files"
-        android:visibility="gone" />
-
-    <!-- RecyclerView (if used as alternate to GridView) -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerView"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="0"
-        android:visibility="gone" />
+<!--    &lt;!&ndash; RecyclerView (if used as alternate to GridView) &ndash;&gt;-->
+<!--    <androidx.recyclerview.widget.RecyclerView-->
+<!--        android:id="@+id/recyclerView"-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="0dp"-->
+<!--        android:layout_weight="0"-->
+<!--        android:visibility="gone" />-->
 </LinearLayout>
