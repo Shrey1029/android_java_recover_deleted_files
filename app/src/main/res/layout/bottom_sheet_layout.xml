@@ -94,7 +94,7 @@
             android:id="@+id/radioCaseInsensitive"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/casesensitive"
+            android:text="@string/caseinsensitive"
             android:paddingEnd="16dp"
             android:paddingStart="16dp" />
     </RadioGroup>

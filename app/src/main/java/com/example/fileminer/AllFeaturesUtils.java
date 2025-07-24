@@ -2,7 +2,9 @@ package com.example.fileminer;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Environment;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -399,34 +401,91 @@ public class AllFeaturesUtils {
     }
 
     // ---------------- search icon
+//    public static void setupSearch(Menu menu, Context context, FileFilterCallback callback) {
+//        MenuItem searchItem = menu.findItem(R.id.action_search);
+//
+//        if (searchItem != null) {
+//            // Use AppCompat SearchView for backward compatibility
+//            androidx.appcompat.widget.SearchView searchView = new androidx.appcompat.widget.SearchView(context);
+//            searchView.setQueryHint("Search Files...");
+//            searchView.setIconifiedByDefault(true); // Keeps search icon until expanded
+//
+//            // Search callback
+//            searchView.setOnQueryTextListener(new androidx.appcompat.widget.SearchView.OnQueryTextListener() {
+//                @Override
+//                public boolean onQueryTextSubmit(String query) {
+//                    callback.onFilter(query);
+//                    return true;
+//                }
+//
+//                @Override
+//                public boolean onQueryTextChange(String newText) {
+//                    callback.onFilter(newText);
+//                    return true;
+//                }
+//            });
+//
+//            // Attach SearchView to menu item
+//            searchItem.setActionView(searchView);
+//
+//            // Set showAsAction depending on Android version
+//            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.JELLY_BEAN) {
+//                searchItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS | MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
+//            } else {
+//                // Older devices: collapseActionView doesn't work reliably
+//                searchItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+//            }
+//        }
+//
+//        // Optional: Ensure filter icon is visible
+//        MenuItem filterItem = menu.findItem(R.id.action_filter);
+//        if (filterItem != null) {
+//            filterItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
+//        }
+//    }
     public static void setupSearch(Menu menu, Context context, FileFilterCallback callback) {
         MenuItem searchItem = menu.findItem(R.id.action_search);
-        if (searchItem != null) {
-            SearchView searchView = (SearchView) searchItem.getActionView();
-            if (searchView != null) {
-                searchView.setQueryHint("Search Files...");
-                searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-                    @Override
-                    public boolean onQueryTextSubmit(String query) {
-                        callback.onFilter(query);
-                        return true;
-                    }
 
-                    @Override
-                    public boolean onQueryTextChange(String newText) {
-                        callback.onFilter(newText);
-                        return true;
-                    }
-                });
-                searchItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM | MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
+        if (searchItem != null) {
+            // Use AppCompat SearchView for compatibility
+            androidx.appcompat.widget.SearchView searchView = new androidx.appcompat.widget.SearchView(context);
+            searchView.setQueryHint("Search Files...");
+            searchView.setIconifiedByDefault(true);
+
+            EditText searchEditText = searchView.findViewById(androidx.appcompat.R.id.search_src_text);
+            if (searchEditText != null) {
+                searchEditText.setTextColor(Color.WHITE);          // text color
+                searchEditText.setHintTextColor(Color.LTGRAY);     // hint color
             }
+            // Attach text listener
+            searchView.setOnQueryTextListener(new androidx.appcompat.widget.SearchView.OnQueryTextListener() {
+                @Override
+                public boolean onQueryTextSubmit(String query) {
+                    callback.onFilter(query);
+                    return true;
+                }
+                @Override
+                public boolean onQueryTextChange(String newText) {
+                    callback.onFilter(newText);
+                    return true;
+                }
+            });
+
+            // Attach SearchView to menu item
+            searchItem.setActionView(searchView);
+
+            // Since minSdk >= 26, collapseActionView is safe on all versions
+            searchItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS | MenuItem.SHOW_AS_ACTION_COLLAPSE_ACTION_VIEW);
         }
 
+        // Filter icon handling
         MenuItem filterItem = menu.findItem(R.id.action_filter);
         if (filterItem != null) {
-            filterItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
+            filterItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
         }
     }
+
+
 
     public interface FileFilterCallback {
         void onFilter(String query);

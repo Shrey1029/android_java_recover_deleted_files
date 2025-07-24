@@ -1,6 +1,6 @@
 <!-- res/values/styles.xml -->
 <resources>
-    <style name="Theme.A" parent="Theme.AppCompat.DayNight.DarkActionBar">
+    <style name="Theme.A" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="colorPrimary">#000000</item>
         <item name="colorPrimaryDark">#121212</item>
         <item name="colorAccent">#4CAF50</item>

@@ -7,8 +7,21 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     tools:context=".RestoredFilesActivity"
+    android:fitsSystemWindows="true"
+    android:clipToPadding="false"
     android:background="@color/colorSurface"
     >
+    <!-- Selection Toolbar -->
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/mainToolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/black"
+        android:elevation="4dp"
+        android:text="@string/app_name"
+        android:textColor="@color/colorOnPrimary"
+        app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"/>
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/selectionToolbar"
@@ -49,18 +62,4 @@
             android:padding="16dp"
             android:visibility="gone" />
     </FrameLayout>
-<!--    <Button-->
-<!--        android:id="@+id/btnDeleteSelected"-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="wrap_content"-->
-<!--        android:text="Delete Selected Files"-->
-<!--        android:visibility="gone" />-->
-
-<!--    &lt;!&ndash; RecyclerView (if used as alternate to GridView) &ndash;&gt;-->
-<!--    <androidx.recyclerview.widget.RecyclerView-->
-<!--        android:id="@+id/recyclerView"-->
-<!--        android:layout_width="match_parent"-->
-<!--        android:layout_height="0dp"-->
-<!--        android:layout_weight="0"-->
-<!--        android:visibility="gone" />-->
 </LinearLayout>
