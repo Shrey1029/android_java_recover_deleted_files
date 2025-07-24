@@ -1,9 +1,12 @@
 package com.example.fileminer;
 
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -22,6 +25,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.example.fileminer.databinding.ActivityRestoredFilesBinding;
 
@@ -66,12 +73,45 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
         super.onCreate(savedInstanceState);
 
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         binding = ActivityRestoredFilesBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        View root = findViewById(R.id.main);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            // Handle padding for status bar
+            ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+                int topInset = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
+                v.setPadding(0, topInset, 0, 0);
+                return insets;
+            });
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                WindowInsetsControllerCompat controller = new WindowInsetsControllerCompat(getWindow(), root);
+
+                if (isLightMode()) {
+                    //  dark icons for light background
+                    controller.setAppearanceLightStatusBars(true);
+                    getWindow().setStatusBarColor(Color.WHITE);
+                } else {
+                    // Light icons for dark background
+                    controller.setAppearanceLightStatusBars(false);
+                    getWindow().setStatusBarColor(Color.BLACK);
+                }
+            } else {
+                // For older versions or OEMs that ignore light icons
+                getWindow().setStatusBarColor(Color.BLACK); // Always dark background
+            }
+        } else {
+            root.setPadding(0, dpToPx(24), 0, 0);
+        }
+
+        setSupportActionBar(binding.mainToolbar);
         restoredFiles = new ArrayList<>();
         selectedFiles = new ArrayList<>();
         fullMediaItemList = new ArrayList<>();
@@ -120,7 +160,17 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
             }
         }
     }
+    private boolean isLightMode() {
+        int mode = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        return mode != Configuration.UI_MODE_NIGHT_YES;
+    }
 
+    private int dpToPx(int dp) {
+        float density = getResources().getDisplayMetrics().density;
+        return Math.round(dp * density);
+    }
+
+    //----------below main app toolbar
     private void setupSelectionToolbar() {
         binding.selectionToolbar.inflateMenu(R.menu.selection_menu);
         binding.selectionToolbar.setTitleTextColor(getResources().getColor(android.R.color.black));
@@ -186,7 +236,7 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
                         String filePath = cursor.getString(0);
                         String displayName = cursor.getString(1);
                         if (filePath != null && !filePath.contains("/.trashed/") && !filePath.contains("/.recycle/") && !filePath.contains("/.trash/")
-                          && !filePath.contains("/_.trashed/") ) {
+                                && !filePath.contains("/_.trashed/") ) {
                             mediaItems.add(new MediaItem(displayName, filePath));
                         }
                     }
@@ -804,6 +854,6 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
                 duplicateList,
                 this::sortFiles,
                 adapter
-        );    }
+                );}
 
 }

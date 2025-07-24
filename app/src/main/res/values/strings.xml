@@ -34,10 +34,4 @@
     <string name="delete">Delete</string>
     <string name="filename">File Name</string>
 
-    <string-array name="search_options">
-        <item>Contains</item>
-        <item>Starts with</item>
-        <item>Ends with</item>
-        <item>Exact match</item>
-    </string-array>
 </resources>
