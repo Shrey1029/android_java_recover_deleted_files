@@ -3,9 +3,5 @@
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/android_java_recover_deleted_files" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/android_java_recover_deleted_files/android_java_recover_deleted_files" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/android_java_recover_deleted_files/android_java_recover_deleted_files/android_java_recover_deleted_files" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/android_java_recover_deleted_files/android_java_recover_deleted_files/android_java_recover_deleted_files/android_java_recover_deleted_files" vcs="Git" />
-    <mapping directory="$PROJECT_DIR$/android_java_recover_deleted_files/android_java_recover_deleted_files/android_java_recover_deleted_files/android_java_recover_deleted_files/android_java_recover_deleted_files" vcs="Git" />
   </component>
 </project>
