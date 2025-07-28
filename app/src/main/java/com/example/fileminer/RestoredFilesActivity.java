@@ -80,49 +80,13 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         binding = ActivityRestoredFilesBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-        Intent intent = getIntent();
-        fileType = intent.getStringExtra("fileType");
 
-        Log.d("RestoredFilesActivity", "Received fileType: " + fileType);
-
-        // Call the new data loading method
-        loadData();
-
-        View root = findViewById(R.id.main);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            // Handle padding for status bar
-            ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
-                int topInset = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
-                v.setPadding(0, topInset, 0, 0);
-                return insets;
-            });
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                WindowInsetsControllerCompat controller = new WindowInsetsControllerCompat(getWindow(), root);
-
-                if (isLightMode()) {
-                    //  dark icons for light background
-                    controller.setAppearanceLightStatusBars(true);
-                    getWindow().setStatusBarColor(Color.WHITE);
-                } else {
-                    // Light icons for dark background
-                    controller.setAppearanceLightStatusBars(false);
-                    getWindow().setStatusBarColor(Color.BLACK);
-                }
-            } else {
-                // For older versions or OEMs that ignore light icons
-                getWindow().setStatusBarColor(Color.BLACK); // Always dark background
-            }
-        } else {
-            root.setPadding(0, dpToPx(24), 0, 0);
-        }
-
-        setSupportActionBar(binding.mainToolbar);
+        // ✅ Initialize all required lists only once
         restoredFiles = new ArrayList<>();
         selectedFiles = new ArrayList<>();
         fullMediaItemList = new ArrayList<>();
 
+        // ✅ Adapter must be initialized after list
         adapter = new MediaAdapter(this, restoredFiles, this, this);
         binding.gridView.setAdapter(adapter);
 
@@ -131,56 +95,58 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
             openFile(item.path);
         });
 
+        // ✅ Handle status bar padding & appearance
+        View root = findViewById(R.id.main);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+                int topInset = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top;
+                v.setPadding(0, topInset, 0, 0);
+                return insets;
+            });
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                WindowInsetsControllerCompat controller = new WindowInsetsControllerCompat(getWindow(), root);
+                if (isLightMode()) {
+                    controller.setAppearanceLightStatusBars(true);
+                    getWindow().setStatusBarColor(Color.WHITE);
+                } else {
+                    controller.setAppearanceLightStatusBars(false);
+                    getWindow().setStatusBarColor(Color.BLACK);
+                }
+            } else {
+                getWindow().setStatusBarColor(Color.BLACK);
+            }
+        } else {
+            root.setPadding(0, dpToPx(24), 0, 0);
+        }
+
+        setSupportActionBar(binding.mainToolbar);
         setupSelectionToolbar();
 
-        if (fileType != null) {
-            switch (fileType) {
-                case "Photo":
-                    new LoadMediaFilesTask(this).execute(MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                    break;
-                case "Video":
-                    new LoadMediaFilesTask(this).execute(MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
-                    break;
-                case "Audio":
-                    new LoadMediaFilesTask(this).execute(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI);
-                    break;
-                case "Document":
-                    new LoadDocumentFilesTask(this).execute();
-                    break;
-                case "Deleted":
-                    startFileScan();
-                    break;
-                case "Hidden":
-                    showHiddenFiles();
-                    break;
-                case "OtherFiles":
-                    fetchOtherFiles();
-                    break;
-                default:
-                    new LoadAllFilesTask(this).execute();
-                    break;
-            }
-        }
+        // ✅ Get file type
+        Intent intent = getIntent();
+        fileType = intent.getStringExtra("fileType");
+        Log.d("RestoredFilesActivity", "Received fileType: " + fileType);
+
+        // ✅ Load data only once (loadData handles cache + fileType switch)
+        loadData(); // This already handles the fileType switch
     }
+
     private void loadData() {
         if (fileType == null) return;
 
-        // 1. Check the cache first
         List<MediaItem> cachedFiles = FileCache.getInstance().get(fileType);
         if (cachedFiles != null && !cachedFiles.isEmpty()) {
-            Log.d("RestoredFilesActivity", "Loading " + fileType + " from cache.");
             restoredFiles.clear();
             restoredFiles.addAll(cachedFiles);
             fullMediaItemList.clear();
             fullMediaItemList.addAll(cachedFiles);
-            sortFiles();
             adapter.notifyDataSetChanged();
             binding.progressBar.setVisibility(View.GONE);
-            return; // Stop here, loaded from cache
+            return;
         }
 
-        // 2. If cache is empty, perform the scan
-        Log.d("RestoredFilesActivity", "Cache miss for " + fileType + ". Scanning from source.");
+        // load from storage based on fileType
         switch (fileType) {
             case "Photo":
                 new LoadMediaFilesTask(this).execute(MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
@@ -208,6 +174,8 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
                 break;
         }
     }
+
+
     private boolean isLightMode() {
         int mode = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
         return mode != Configuration.UI_MODE_NIGHT_YES;
