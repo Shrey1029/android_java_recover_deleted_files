@@ -37,6 +37,11 @@
 
 
     <item
+        android:id="@+id/action_refresh"
+        android:title="Refresh"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/hideDuplicates"
         android:title="Hide Duplicates"
         app:showAsAction="never" />

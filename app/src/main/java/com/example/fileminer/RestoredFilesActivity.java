@@ -80,6 +80,13 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         binding = ActivityRestoredFilesBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        Intent intent = getIntent();
+        fileType = intent.getStringExtra("fileType");
+
+        Log.d("RestoredFilesActivity", "Received fileType: " + fileType);
+
+        // Call the new data loading method
+        loadData();
 
         View root = findViewById(R.id.main);
 
@@ -126,11 +133,6 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
 
         setupSelectionToolbar();
 
-        Intent intent = getIntent();
-        fileType = intent.getStringExtra("fileType");
-
-        Log.d("RestoredFilesActivity", "Received fileType: " + fileType);
-
         if (fileType != null) {
             switch (fileType) {
                 case "Photo":
@@ -158,6 +160,52 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
                     new LoadAllFilesTask(this).execute();
                     break;
             }
+        }
+    }
+    private void loadData() {
+        if (fileType == null) return;
+
+        // 1. Check the cache first
+        List<MediaItem> cachedFiles = FileCache.getInstance().get(fileType);
+        if (cachedFiles != null && !cachedFiles.isEmpty()) {
+            Log.d("RestoredFilesActivity", "Loading " + fileType + " from cache.");
+            restoredFiles.clear();
+            restoredFiles.addAll(cachedFiles);
+            fullMediaItemList.clear();
+            fullMediaItemList.addAll(cachedFiles);
+            sortFiles();
+            adapter.notifyDataSetChanged();
+            binding.progressBar.setVisibility(View.GONE);
+            return; // Stop here, loaded from cache
+        }
+
+        // 2. If cache is empty, perform the scan
+        Log.d("RestoredFilesActivity", "Cache miss for " + fileType + ". Scanning from source.");
+        switch (fileType) {
+            case "Photo":
+                new LoadMediaFilesTask(this).execute(MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                break;
+            case "Video":
+                new LoadMediaFilesTask(this).execute(MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
+                break;
+            case "Audio":
+                new LoadMediaFilesTask(this).execute(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI);
+                break;
+            case "Document":
+                new LoadDocumentFilesTask(this).execute();
+                break;
+            case "Deleted":
+                startFileScan();
+                break;
+            case "Hidden":
+                showHiddenFiles();
+                break;
+            case "OtherFiles":
+                fetchOtherFiles();
+                break;
+            default:
+                new LoadAllFilesTask(this).execute();
+                break;
         }
     }
     private boolean isLightMode() {
@@ -252,6 +300,11 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
         protected void onPostExecute(ArrayList<MediaItem> mediaItems) {
             RestoredFilesActivity activity = activityRef.get();
             if (activity != null && !activity.isFinishing()) {
+                // --- CHANGE ADDED HERE ---
+                // Add the newly loaded list to the cache for future use.
+                FileCache.getInstance().put(activity.fileType, mediaItems);
+                // -------------------------
+
                 activity.restoredFiles.clear();
                 activity.restoredFiles.addAll(mediaItems);
 
@@ -418,18 +471,30 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
                     Toast.makeText(this, deletedFiles.size() + " deleted files found!", Toast.LENGTH_SHORT).show();
                 }
 
-                //---change in this
                 restoredFiles.clear();
                 fullMediaItemList.clear();
+
+                // --- CHANGES START HERE ---
+
+                // Create a temporary list to hold the items for caching.
+                ArrayList<MediaItem> itemsToCache = new ArrayList<>();
 
                 for (File file : deletedFiles) {
                     MediaItem item = new MediaItem(file.getName(), file.getAbsolutePath());
                     restoredFiles.add(item);
                     fullMediaItemList.add(item);
+                    itemsToCache.add(item); // Add the item to our cacheable list.
                 }
 
+                // After the loop, save the complete list to the cache.
+                if (!itemsToCache.isEmpty()) {
+                    FileCache.getInstance().put(fileType, itemsToCache);
+                }
+
+                // --- CHANGES END HERE ---
+
                 sortFiles(); // sort after scan
-                adapter = new MediaAdapter(this, restoredFiles, RestoredFilesActivity.this , this);
+                adapter = new MediaAdapter(this, restoredFiles, RestoredFilesActivity.this, this);
                 binding.gridView.setAdapter(adapter);
             });
 
@@ -692,7 +757,18 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
             sortFiles();
             adapter.notifyDataSetChanged();
             return true;
-        }  else if (id == R.id.hideDuplicates) {
+        }
+
+        // --- REFRESH LOGIC ADDED ---
+        else if (id == R.id.action_refresh) {
+            Toast.makeText(this, "Refreshing...", Toast.LENGTH_SHORT).show();
+            FileCache.getInstance().clear(fileType); // Clear cache for this type
+            loadData(); // Reload data from source
+            return true;
+        }
+        // -------------------------
+
+        else if (id == R.id.hideDuplicates) {
             hideDuplicates();
             return true;
         } else if (id == R.id.showOnlyDuplicates) {
@@ -854,6 +930,6 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
                 duplicateList,
                 this::sortFiles,
                 adapter
-                );}
+        );}
 
 }
