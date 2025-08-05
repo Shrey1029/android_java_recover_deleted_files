@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Search Type"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textStyle="bold" />
+
+        <RadioGroup
+            android:id="@+id/radioGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp">
+
+            <RadioButton
+                android:id="@+id/radioContains"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Contains"
+                android:checked="true"/>
+
+            <RadioButton
+                android:id="@+id/radioStartsWith"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Starts With" />
+
+            <RadioButton
+                android:id="@+id/radioEndsWith"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Ends With" />
+
+            <RadioButton
+                android:id="@+id/radioPath"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="File Path" />
+
+        </RadioGroup>
+
+        <TextView
+            android:layout_width="58dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="File Name Content"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textStyle="bold" />
+
+        <RadioGroup
+            android:id="@+id/radioGroupFileNameFilter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp">
+
+            <RadioButton
+                android:id="@+id/radioWithText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Show only files with text in name" />
+
+            <RadioButton
+                android:id="@+id/radioWithoutText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Show only files without text in name" />
+
+            <RadioButton
+                android:id="@+id/radioBoth"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:checked="true"
+                android:text="Show both" />
+        </RadioGroup>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Case Sensitivity"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textStyle="bold" />
+
+        <RadioGroup
+            android:id="@+id/radioGroupCase"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/radioCaseSensitive"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="16dp"
+                android:text="Case Sensitive" />
+
+            <RadioButton
+                android:id="@+id/radioCaseInsensitive"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Case Insensitive"
+                android:checked="true"/>
+
+        </RadioGroup>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Exclude Folders"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/multiExcludeFolders"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/dropdown_background"
+            android:drawableEnd="@android:drawable/arrow_down_float"
+            android:padding="12dp"
+            android:text="Loading folders..."
+            android:gravity="center_vertical"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Exclude Extension"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/multiExcludeExtensions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/dropdown_background"
+            android:drawableEnd="@android:drawable/arrow_down_float"
+            android:padding="12dp"
+            android:text="Loading extensions..."
+            android:gravity="center_vertical"/>
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

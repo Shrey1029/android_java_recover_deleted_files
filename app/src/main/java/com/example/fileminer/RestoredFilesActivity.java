@@ -42,7 +42,6 @@ import java.util.Set;
 
 public class RestoredFilesActivity extends AppCompatActivity implements ToolbarUpdateListener, FileDeleteListener {
 
-
     private ActivityRestoredFilesBinding binding;
 
     private MediaAdapter adapter;
@@ -64,6 +63,10 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
 
     private String fileType = "Photo";
 
+    // --- NEW ---
+    // Add a state variable for the filename content filter. Default to "Both".
+    private String fileNameFilterType = "Both";
+
     //-----------deleted
     List<File> deletedFiles;
     private static final int MAX_FILES = 500;
@@ -73,29 +76,21 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
-        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
+        // This method remains unchanged.
         super.onCreate(savedInstanceState);
-
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         binding = ActivityRestoredFilesBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-
-        // ✅ Initialize all required lists only once
         restoredFiles = new ArrayList<>();
         selectedFiles = new ArrayList<>();
         fullMediaItemList = new ArrayList<>();
-
-        // ✅ Adapter must be initialized after list
         adapter = new MediaAdapter(this, restoredFiles, this, this);
         binding.gridView.setAdapter(adapter);
-
         binding.gridView.setOnItemClickListener((parent, view, position, id) -> {
             MediaItem item = restoredFiles.get(position);
             openFile(item.path);
         });
-
-        // ✅ Handle status bar padding & appearance
         View root = findViewById(R.id.main);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
@@ -103,7 +98,6 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
                 v.setPadding(0, topInset, 0, 0);
                 return insets;
             });
-
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 WindowInsetsControllerCompat controller = new WindowInsetsControllerCompat(getWindow(), root);
                 if (isLightMode()) {
@@ -119,22 +113,17 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
         } else {
             root.setPadding(0, dpToPx(24), 0, 0);
         }
-
         setSupportActionBar(binding.mainToolbar);
         setupSelectionToolbar();
-
-        // ✅ Get file type
         Intent intent = getIntent();
         fileType = intent.getStringExtra("fileType");
         Log.d("RestoredFilesActivity", "Received fileType: " + fileType);
-
-        // ✅ Load data only once (loadData handles cache + fileType switch)
-        loadData(); // This already handles the fileType switch
+        loadData();
     }
 
+    // This method remains unchanged.
     private void loadData() {
         if (fileType == null) return;
-
         List<MediaItem> cachedFiles = FileCache.getInstance().get(fileType);
         if (cachedFiles != null && !cachedFiles.isEmpty()) {
             restoredFiles.clear();
@@ -145,8 +134,6 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
             binding.progressBar.setVisibility(View.GONE);
             return;
         }
-
-        // load from storage based on fileType
         switch (fileType) {
             case "Photo":
                 new LoadMediaFilesTask(this).execute(MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
@@ -175,50 +162,46 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
         }
     }
 
-
+    // This method remains unchanged.
     private boolean isLightMode() {
         int mode = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
         return mode != Configuration.UI_MODE_NIGHT_YES;
     }
 
+    // This method remains unchanged.
     private int dpToPx(int dp) {
         float density = getResources().getDisplayMetrics().density;
         return Math.round(dp * density);
     }
 
-    //----------below main app toolbar
+    // This method remains unchanged.
     private void setupSelectionToolbar() {
         binding.selectionToolbar.inflateMenu(R.menu.selection_menu);
         binding.selectionToolbar.setTitleTextColor(getResources().getColor(android.R.color.black));
-
         binding.selectionToolbar.setOnMenuItemClickListener(item -> {
             int id = item.getItemId();
-
             if (id == R.id.deleteSelected) {
                 binding.selectionToolbar.setTitle("Delete Files");
                 deleteSelectedFiles();
                 return true;
-
             } else if (id == R.id.moveSelected) {
                 binding.selectionToolbar.setTitle("Move Files");
                 moveSelectedFiles();
                 return true;
-
             } else if (id == R.id.selectAll) {
                 boolean selectAll = !item.isChecked();
                 item.setChecked(selectAll);
                 item.setTitle(selectAll ? "Deselect All File" : "Select All File");
-
                 binding.selectionToolbar.setTitle(selectAll ? "All Files Selected" : "Select Files");
                 selectAllFiles(selectAll);
                 adapter.notifyDataSetChanged();
                 return true;
             }
-
             return false;
         });
     }
 
+    // All AsyncTask classes (LoadMediaFilesTask, etc.) remain unchanged.
     private static class LoadMediaFilesTask extends AsyncTask<Uri, Void, ArrayList<MediaItem>> {
         private final WeakReference<RestoredFilesActivity> activityRef;
 
@@ -268,17 +251,11 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
         protected void onPostExecute(ArrayList<MediaItem> mediaItems) {
             RestoredFilesActivity activity = activityRef.get();
             if (activity != null && !activity.isFinishing()) {
-                // --- CHANGE ADDED HERE ---
-                // Add the newly loaded list to the cache for future use.
                 FileCache.getInstance().put(activity.fileType, mediaItems);
-                // -------------------------
-
                 activity.restoredFiles.clear();
                 activity.restoredFiles.addAll(mediaItems);
-
                 activity.fullMediaItemList.clear();
                 activity.fullMediaItemList.addAll(mediaItems);
-
                 activity.sortFiles();
                 activity.adapter.notifyDataSetChanged();
                 activity.binding.progressBar.setVisibility(View.GONE);
@@ -345,10 +322,8 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
             if (activity != null && !activity.isFinishing()) {
                 activity.restoredFiles.clear();
                 activity.restoredFiles.addAll(mediaItems);
-
                 activity.fullMediaItemList.clear();
                 activity.fullMediaItemList.addAll(mediaItems);
-
                 activity.sortFiles();
                 activity.adapter.notifyDataSetChanged();
                 activity.binding.progressBar.setVisibility(View.GONE);
@@ -406,10 +381,8 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
             if (activity != null && !activity.isFinishing()) {
                 activity.restoredFiles.clear();
                 activity.restoredFiles.addAll(mediaItems);
-
                 activity.fullMediaItemList.clear();
                 activity.fullMediaItemList.addAll(mediaItems);
-
                 activity.sortFiles();
                 activity.adapter.notifyDataSetChanged();
                 activity.binding.progressBar.setVisibility(View.GONE);
@@ -417,7 +390,7 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
         }
     }
 
-    //---------------deleted Files
+    // All file handling methods (startFileScan, showHiddenFiles, etc.) remain unchanged.
     private void startFileScan() {
         binding.progressBar.setVisibility(View.VISIBLE);
         binding.gridView.setVisibility(View.GONE);
@@ -442,26 +415,20 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
                 restoredFiles.clear();
                 fullMediaItemList.clear();
 
-                // --- CHANGES START HERE ---
-
-                // Create a temporary list to hold the items for caching.
                 ArrayList<MediaItem> itemsToCache = new ArrayList<>();
 
                 for (File file : deletedFiles) {
                     MediaItem item = new MediaItem(file.getName(), file.getAbsolutePath());
                     restoredFiles.add(item);
                     fullMediaItemList.add(item);
-                    itemsToCache.add(item); // Add the item to our cacheable list.
+                    itemsToCache.add(item);
                 }
 
-                // After the loop, save the complete list to the cache.
                 if (!itemsToCache.isEmpty()) {
                     FileCache.getInstance().put(fileType, itemsToCache);
                 }
 
-                // --- CHANGES END HERE ---
-
-                sortFiles(); // sort after scan
+                sortFiles();
                 adapter = new MediaAdapter(this, restoredFiles, RestoredFilesActivity.this, this);
                 binding.gridView.setAdapter(adapter);
             });
@@ -497,7 +464,6 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
         return parentDir != null && isTrashFolder(parentDir) || file.getName().startsWith(".trashed-");
     }
 
-    //-------------------hidden Files
     private void showHiddenFiles() {
         File directory = Environment.getExternalStorageDirectory();
         if (directory != null && directory.exists()) {
@@ -524,7 +490,7 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
             fullMediaItemList.clear();
             fullMediaItemList.addAll(restoredFiles);
 
-            sortFiles();  // Sort current list
+            sortFiles();
 
             adapter = new MediaAdapter(this, restoredFiles, this, this);
             binding.gridView.setAdapter(adapter);
@@ -587,7 +553,6 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
         return false;
     }
 
-    //----------otherFiles
     private void fetchOtherFiles() {
         binding.progressBar.setVisibility(View.VISIBLE);
         binding.gridView.setVisibility(View.GONE);
@@ -656,25 +621,19 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
                 name.endsWith(".docx") ;
     }
 
-
-    //----------open file with the help of external apps
     private void openFile(String filePath) {
         if (filePath == null) return;
-
         File file = new File(filePath);
         Uri uri = FileProvider.getUriForFile(this, getApplicationContext().getPackageName() + ".provider", file);
-
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setDataAndType(uri, getMimeType(filePath));
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
         try {
             startActivity(intent);
         } catch (Exception e) {
             Log.e("RestoredFilesActivity", "No suitable app found to open this file", e);
         }
     }
-
     private String getMimeType(String filePath) {
         if (filePath.endsWith(".mp4") || filePath.endsWith(".mkv")) {
             return "video/*";
@@ -694,12 +653,13 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
         return "/";
     }
 
-    //=====================================Features================================
     @Override
     public void updateSelectionToolbar() {
         AllFeaturesUtils.updateSelectionToolbar(restoredFiles, binding.selectionToolbar);
     }
 
+
+    // --- MODIFIED to handle the new filter ---
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
@@ -725,18 +685,12 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
             sortFiles();
             adapter.notifyDataSetChanged();
             return true;
-        }
-
-        // --- REFRESH LOGIC ADDED ---
-        else if (id == R.id.action_refresh) {
+        } else if (id == R.id.action_refresh) {
             Toast.makeText(this, "Refreshing...", Toast.LENGTH_SHORT).show();
-            FileCache.getInstance().clear(fileType); // Clear cache for this type
-            loadData(); // Reload data from source
+            FileCache.getInstance().clear(fileType);
+            loadData();
             return true;
-        }
-        // -------------------------
-
-        else if (id == R.id.hideDuplicates) {
+        } else if (id == R.id.hideDuplicates) {
             hideDuplicates();
             return true;
         } else if (id == R.id.showOnlyDuplicates) {
@@ -748,10 +702,11 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
             adapter.setShowPath(showPath);
             return true;
 
-        }
-        else if (id == R.id.action_filter) {
+        } else if (id == R.id.action_filter) {
             loadFileList();
 
+            // The constructor for SearchBottomSheet is now updated to pass the new filter state.
+            // The listener is updated to receive the new filter choice.
             SearchBottomSheet bottomSheet = new SearchBottomSheet(
                     this,
                     selectedSearchType,
@@ -759,18 +714,18 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
                     excludedFolders,
                     excludedExtensions,
                     fileType,
-                    new SearchBottomSheet.OnSearchOptionSelectedListener() {
-                        @Override
-                        public void onSearchOptionSelected(String searchType, boolean caseSensitive,
-                                                           List<String> folders, List<String> extensions) {
-                            selectedSearchType = searchType;
-                            isCaseSensitive = caseSensitive;
-                            excludedFolders = folders;
-                            excludedExtensions = extensions;
+                    fileNameFilterType, // Pass the current state to the sheet
+                    (searchType, caseSensitive, folders, extensions, newFileNameFilterType) -> {
+                        // This lambda is the implementation of the OnSearchOptionSelectedListener.
+                        // It receives all the updated choices from the bottom sheet.
+                        selectedSearchType = searchType;
+                        isCaseSensitive = caseSensitive;
+                        excludedFolders = folders;
+                        excludedExtensions = extensions;
+                        fileNameFilterType = newFileNameFilterType; // Store the new choice
 
-                            // =========== Apply both folder + extension exclusions
-                            filterFiles(currentQuery, excludedFolders, excludedExtensions);
-                        }
+                        // Immediately apply all filters with the new settings
+                        filterFiles(currentQuery, excludedFolders, excludedExtensions);
                     }
             );
 
@@ -778,15 +733,10 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
             return true;
         }
 
-
         return super.onOptionsItemSelected(item);
     }
 
-    //--------------SortFiles
-    private void sortFiles() {AllFeaturesUtils.sortFiles(restoredFiles, currentSort, isAscending);
-    }
-
-    //-------------- filterfiles
+    // --- MODIFIED to apply the new filter ---
     private void filterFiles(String query, List<String> excludedFolders, List<String> excludedExtensions) {
         List<MediaItem> baseList;
         if (currentFilteredBaseList != null && !currentFilteredBaseList.isEmpty()) {
@@ -797,11 +747,32 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
             baseList = new ArrayList<>(fullMediaItemList);
         }
 
+        // --- NEW LOGIC BLOCK ---
+        // This block runs the "filename content" filter first.
+        List<MediaItem> nameFilteredList = new ArrayList<>();
+        if (!"Both".equals(fileNameFilterType)) {
+            for (MediaItem item : baseList) {
+                // Regex checks if the filename contains any alphabetical characters.
+                boolean hasAlphabeticalChars = item.name.matches(".*[a-zA-Z].*");
+
+                if ("With Text".equals(fileNameFilterType) && hasAlphabeticalChars) {
+                    nameFilteredList.add(item);
+                } else if ("Without Text".equals(fileNameFilterType) && !hasAlphabeticalChars) {
+                    nameFilteredList.add(item);
+                }
+            }
+        } else {
+            // If the filter is "Both", we don't filter by name content, so we use the whole list.
+            nameFilteredList.addAll(baseList);
+        }
+        // --- END OF NEW LOGIC BLOCK ---
+
+        // The rest of the filtering is now performed on the result of our new logic.
         AllFeaturesUtils.filterFiles(
                 query,
                 excludedFolders,
                 excludedExtensions,
-                baseList,
+                nameFilteredList, // Use the new, pre-filtered list
                 restoredFiles,
                 isCaseSensitive,
                 selectedSearchType,
@@ -810,15 +781,17 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
                 adapter,
                 this::sortFiles
         );
-
     }
 
-    //--------------loadfilelist
+    // All other feature methods (sortFiles, delete, move, etc.) remain unchanged.
+    private void sortFiles() {
+        AllFeaturesUtils.sortFiles(restoredFiles, currentSort, isAscending);
+    }
+
     private void loadFileList() {
         AllFeaturesUtils.loadFileList(restoredFiles, fileList);
     }
 
-    //--------------------Delet file and Files
     @Override
     public void deleteFile(MediaItem item) {
         AllFeaturesUtils.deleteFile(
@@ -829,8 +802,8 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
                 adapter,
                 file -> moveToTrash(file)
         );
-
     }
+
     private void deleteSelectedFiles() {
         AllFeaturesUtils.deleteSelectedFiles(
                 this,
@@ -839,23 +812,20 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
                 adapter,
                 file -> moveToTrash(file)
         );
-
     }
+
     private boolean moveToTrash(File file) {
         File trashDir = new File(Environment.getExternalStorageDirectory(), "_.trashed");
         if (!trashDir.exists()) trashDir.mkdirs();
-
         File destFile = new File(trashDir, file.getName());
         return file.renameTo(destFile);
     }
 
-    //------------------ select all files
     private void selectAllFiles(boolean select) {
         AllFeaturesUtils.selectAllFiles(fullMediaItemList, select);
-        updateSelectionToolbar();  // Keep this to refresh UI
+        updateSelectionToolbar();
     }
 
-    //-------------- Move Files
     private void moveSelectedFiles() {
         AllFeaturesUtils.moveSelectedFiles(
                 this,
@@ -865,20 +835,16 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
         );
     }
 
-    //---------------- Search Icon
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.sort_menu, menu);
-
         AllFeaturesUtils.setupSearch(menu, this, query -> {
             currentQuery = query;
             filterFiles(query, excludedFolders, excludedExtensions);
         });
-
         return true;
     }
 
-    // ------------ hide and show duplicate
     private void hideDuplicates() {
         AllFeaturesUtils.hideDuplicates(
                 this,
@@ -887,7 +853,8 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
                 restoredFiles,
                 this::sortFiles,
                 adapter
-        );    }
+        );
+    }
 
     private void showOnlyDuplicates() {
         AllFeaturesUtils.showOnlyDuplicates(
@@ -898,6 +865,6 @@ public class RestoredFilesActivity extends AppCompatActivity implements ToolbarU
                 duplicateList,
                 this::sortFiles,
                 adapter
-        );}
-
+        );
+    }
 }
