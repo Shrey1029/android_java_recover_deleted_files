@@ -33,5 +33,9 @@
     <string name="share">Share</string>
     <string name="delete">Delete</string>
     <string name="filename">File Name</string>
+    <string name="filename_content_filter">File Name Content</string>
+    <string name="with_text_in_name">Show only files with text in name</string>
+    <string name="without_text_in_name">Show only files without text in name</string>
+    <string name="show_both">Show both</string>
 
 </resources>

@@ -1,5 +1,6 @@
 // Updated: Caches fileType-specific folders and extensions separately
 // Fixed memory leaks using static inner classes with WeakReference
+// --- MODIFIED: Added FileName filter functionality
 package com.example.fileminer;
 
 import android.app.Dialog;
@@ -33,6 +34,9 @@ public class SearchBottomSheet extends BottomSheetDialogFragment {
     private String fileType;
     private OnSearchOptionSelectedListener searchOptionListener;
 
+    // --- NEW ---
+    private String fileNameFilterType; // Holds state for the new filter
+
     private List<String> allFolders = new ArrayList<>();
     private List<String> excludedFolders = new ArrayList<>();
 
@@ -42,14 +46,17 @@ public class SearchBottomSheet extends BottomSheetDialogFragment {
     private TextView excludeFoldersTextView;
     private TextView excludeExtensionsTextView;
 
+    // --- MODIFIED INTERFACE ---
     public interface OnSearchOptionSelectedListener {
         void onSearchOptionSelected(String searchType, boolean isCaseSensitive,
-                                    List<String> excludedFolders, List<String> excludedExtensions);
+                                    List<String> excludedFolders, List<String> excludedExtensions,
+                                    String fileNameFilterType); // Added new parameter
     }
 
+    // --- MODIFIED CONSTRUCTOR ---
     public SearchBottomSheet(Context context, String selectedSearchType, boolean isCaseSensitive,
                              List<String> excludedFolders, List<String> excludedExtensions,
-                             String fileType,
+                             String fileType, String fileNameFilterType, // Added new parameter
                              OnSearchOptionSelectedListener listener) {
         this.context = context;
         this.selectedSearchType = selectedSearchType;
@@ -57,6 +64,7 @@ public class SearchBottomSheet extends BottomSheetDialogFragment {
         this.excludedFolders = new ArrayList<>(excludedFolders);
         this.excludedExtensions = new ArrayList<>(excludedExtensions);
         this.fileType = fileType;
+        this.fileNameFilterType = fileNameFilterType; // Store state of new filter
         this.searchOptionListener = listener;
     }
 
@@ -70,6 +78,11 @@ public class SearchBottomSheet extends BottomSheetDialogFragment {
         RadioGroup caseSensitiveRadioGroup = dialog.findViewById(R.id.radioGroupCase);
         excludeFoldersTextView = dialog.findViewById(R.id.multiExcludeFolders);
         excludeExtensionsTextView = dialog.findViewById(R.id.multiExcludeExtensions);
+
+        // --- NEW ---
+        // Find the new RadioGroup for filename filtering
+        RadioGroup fileNameFilterGroup = dialog.findViewById(R.id.radioGroupFileNameFilter);
+
 
         excludeFoldersTextView.setEnabled(false);
         excludeExtensionsTextView.setEnabled(false);
@@ -115,12 +128,27 @@ public class SearchBottomSheet extends BottomSheetDialogFragment {
             notifyListener();
         });
 
+        // --- NEW ---
+        // Add listener for the new filename filter group
+        fileNameFilterGroup.setOnCheckedChangeListener((group, checkedId) -> {
+            if (checkedId == R.id.radioWithText) {
+                fileNameFilterType = "With Text";
+            } else if (checkedId == R.id.radioWithoutText) {
+                fileNameFilterType = "Without Text";
+            } else { // Assumes R.id.radioBoth
+                fileNameFilterType = "Both";
+            }
+            notifyListener();
+        });
+
         setInitialRadioButtonState(searchTypeRadioGroup);
         setInitialCaseSensitiveState(caseSensitiveRadioGroup);
+        setInitialFileNameFilterState(fileNameFilterGroup); // Set the initial state for the new group
 
         return dialog;
     }
 
+    // ... (LoadFoldersTask and LoadExtensionsTask are unchanged)
     private static class LoadFoldersTask extends AsyncTask<Void, Void, List<String>> {
         private final WeakReference<SearchBottomSheet> ref;
         private final String fileType;
@@ -185,7 +213,8 @@ public class SearchBottomSheet extends BottomSheetDialogFragment {
         }
     }
 
-private boolean isDeletedFile(File file) {
+    // ... (Helper methods like isDeletedFile, getFolderNamesRecursively, etc., are unchanged)
+    private boolean isDeletedFile(File file) {
         File parentDir = file.getParentFile();
         return parentDir != null && isTrashFolder(parentDir) || file.getName().startsWith(".trashed-");
     }
@@ -332,9 +361,10 @@ private boolean isDeletedFile(File file) {
         view.setText(excludedExtensions.isEmpty() ? "Select file extensions to exclude" : TextUtils.join(", ", excludedExtensions));
     }
 
+    // --- MODIFIED NOTIFY LISTENER ---
     private void notifyListener() {
         if (searchOptionListener != null) {
-            searchOptionListener.onSearchOptionSelected(selectedSearchType, isCaseSensitive, excludedFolders, excludedExtensions);
+            searchOptionListener.onSearchOptionSelected(selectedSearchType, isCaseSensitive, excludedFolders, excludedExtensions, fileNameFilterType);
         }
     }
 
@@ -356,5 +386,17 @@ private boolean isDeletedFile(File file) {
 
     private void setInitialCaseSensitiveState(RadioGroup caseSensitiveGroup) {
         caseSensitiveGroup.check(isCaseSensitive ? R.id.radioCaseSensitive : R.id.radioCaseInsensitive);
+    }
+
+    // --- NEW ---
+    // Sets the initial state for the filename filter radio buttons
+    private void setInitialFileNameFilterState(RadioGroup radioGroup) {
+        if ("With Text".equals(fileNameFilterType)) {
+            radioGroup.check(R.id.radioWithText);
+        } else if ("Without Text".equals(fileNameFilterType)) {
+            radioGroup.check(R.id.radioWithoutText);
+        } else {
+            radioGroup.check(R.id.radioBoth);
+        }
     }
 }
